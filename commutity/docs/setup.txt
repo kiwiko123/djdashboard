@@ -1,0 +1,17 @@
+Commutity uses MySQL as its database.
+Install MySQL on your local machine.
+As the root user, create a database user 'django_dashboard'
+
+ $ mysql -u root -p
+ mysql> CREATE USER 'django_dashboard'@'localhost IDENTIFIED BY 'password';
+ mysql> exit;
+ $ mysql -u django_dashboard -p
+ password
+ mysql> CREATE DATABASE Users;
+
+
+Install Python MySQL packages:
+  $ sudo pip3 install mysqlclient
+
+  * If an error about mysql_config occurs, issue the following, then repeat:
+  $ sudo apt-get install libmysqlclient-dev
