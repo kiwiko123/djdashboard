@@ -4,4 +4,4 @@ from django.shortcuts import render
 
 
 def index(request: WSGIRequest) -> HttpResponse:
-    return HttpResponse('hello, boo!')
+    return render(request, 'commutity/index.html')
