@@ -13,7 +13,7 @@ class PasswordEncryptor:
     @staticmethod
     def _generate_cipher(key: bytes, iv: str) -> Crypto.Cipher.AES:
         """ Returns a Crypto.Cipher.AES object using key and iv.
-            A Cipher object using the same key/iv CANNOT be used to decrypt the same message;
+            A Cipher object using the same key/initialization vector CANNOT be used to decrypt the same message;
             i.e., you must create 2 objects - one to encrypt, and the other to decrypt.
         """
         return Crypto.Cipher.AES.new(key, Crypto.Cipher.AES.MODE_CFB, iv)

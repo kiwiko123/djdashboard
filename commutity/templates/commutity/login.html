@@ -11,7 +11,7 @@
 	{% endblock %}
 
 	{% block body %}
-		<div>
+		<div id="login-body">
 			<h1>Login</h1>
 
 			<form action="{% url 'commutity:login' %}" method="post">
@@ -21,9 +21,10 @@
 
 				<label for="login-password-box">Password</label>
 				<input type="password" name="password" class="login-text-box" id="login-password-box"/>
+
+				<button type="submit" class="btn btn-success btn-md" id="btn-login">Go</button>
 			</form>
 
-			<button type="button" class="btn btn-success btn-md" id="btn-login">Go</button>
 		</div>
 	{% endblock %}
 

@@ -6,6 +6,10 @@
 	margin: 0;
 }
 
+#login-body {
+	margin-left: 5%;
+}
+
 #login-username-box {
 	margin-bottom: 5%;
 }
