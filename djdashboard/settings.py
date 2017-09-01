@@ -77,7 +77,7 @@ WSGI_APPLICATION = 'djdashboard.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'Users',
+        'NAME': 'CommutityDB',
         'USER': 'django_dashboard',
         'PASSWORD': 'password',
         'HOST': 'localhost',
