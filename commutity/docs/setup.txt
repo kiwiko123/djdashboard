@@ -15,3 +15,7 @@ Install Python MySQL packages:
 
   * If an error about mysql_config occurs, issue the following, then repeat:
   $ sudo apt-get install libmysqlclient-dev
+
+
+DEPENDENCIES - install with pip3
+ * pycrypto

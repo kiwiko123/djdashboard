@@ -1,0 +1,66 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Commutity - Login</title>
+
+		<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g=" crossorigin="anonymous"></script>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+		<link rel="stylesheet" type="text/css" href="{% static "commutity/css/common.css" %}">
+		<link rel="stylesheet" type="text/css" href="{% static "commutity/css/login.css" %}">
+	</head>
+
+	<body>
+		<div role="banner" class="header-banner">
+			<div class="vertical-align" id="header-banner-title-text">
+				<p>commutity</p>
+			</div>
+		</div>
+		<div id="nav-bar">
+			<ul class="no-bullets" id="nav-bar-list">
+				<li class="nav-bar-horizontal nav-bar-active" id="nav-bar-home"><a>Home</a></li>
+				<li class="nav-bar-horizontal" id="nav-bar-get-started"><a>Get Started</a></li>
+				<li class="nav-bar-horizontal" id="nav-bar-about"><a>About</a></li>
+			</ul>
+		</div>
+
+		<div>
+			<h1>Login</h1>
+
+			<form action="{% url 'login' %}" method="post">
+				{% csrf_token %}
+				<label class="login-box-label" for="login-username-box">Username</label>
+				<input type="text" name="username" class="login-text-box" id="login-username-box"/>
+
+				<label for="login-password-box">Password</label>
+				<input type="password" name="password" class="login-text-box" id="login-password-box"/>
+			</form>
+
+			<button type="button" class="btn btn-success btn-md" id="btn-login">Go</button>
+		</div>
+
+		<script type="text/javascript">
+			function switchActiveNavBarPerspective(elementPrevious, elementCurrent) {
+				$(elementPrevious).removeClass("nav-bar-active");
+				$(elementCurrent).addClass("nav-bar-active");
+			}
+
+			function _makeNavButtonActive(element) {
+				var navButtons = $("#nav-bar-list li");
+				navButtons.each(function(index, li){ $(li).removeClass("nav-bar-active"); });
+				$(element).addClass("nav-bar-active");
+			}
+
+			function initNavBar() {
+				$("#nav-bar-home").addClass("nav-bar-active");
+				var navButtons = $("#nav-bar-list li");
+				navButtons.each(function(index, li){ $(li).click(function(){ _makeNavButtonActive(li);  }) });
+			}
+
+			$(document).ready(function() {
+				initNavBar();
+			});
+		</script>
+	</body>
+</html>
