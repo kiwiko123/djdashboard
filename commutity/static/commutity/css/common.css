@@ -38,6 +38,11 @@
 	background-color: #217532;
 }
 
+.float-over {
+	position: absolute;
+	z-index: 1;
+}
+
 #header-banner-title-text {
 	color: white;
 	font-weight: bold;
@@ -53,4 +58,9 @@
 	background-color: black;
 	padding: 0;
 	overflow: hidden;
+}
+
+#login-header {
+	top: 0;
+	right: 0;
 }
