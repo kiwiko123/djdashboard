@@ -1,5 +1,11 @@
 1. change models (models.py)
-2. $ python manage.py makemigrations
+2. $ python manage.py makemigrations commutity
 3. $ python manage.py sqlmigrate commutity xxxx
 4. $ python manage.py check
 5. $ python manage.py migrate
+
+
+To RESET migration data (only do this if you are willing to discard all data!!!):
+ * drop all tables in mysql
+ $ rm commutity/migrations/*
+ mysql> DELETE FROM django_migrations WHERE app='Commutity';

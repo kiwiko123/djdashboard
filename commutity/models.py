@@ -18,6 +18,7 @@ class Credentials(models.Model):
     class Meta:
         db_table = 'Credentials'
 
-    username = models.ForeignKey(User, on_delete=models.CASCADE, to_field='username')
-    password = models.CharField(max_length=64)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, to_field='username')
+    password = models.BinaryField(max_length=128)
     key = models.CharField(max_length=16)
+    iv = models.BinaryField(max_length=128)
