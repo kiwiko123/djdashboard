@@ -3,7 +3,9 @@ Install MySQL on your local machine.
 As the root user, create a database user 'django_dashboard'
 
  $ mysql -u root -p
- mysql> CREATE USER 'django_dashboard'@'localhost IDENTIFIED BY 'password';
+ mysql> CREATE USER 'djdashboard_admin'@'localhost IDENTIFIED BY 'password';
+ mysql> GRANT ALL PRIVILEGES ON *.* TO 'djdashboard_admin'@'localhost';
+ mysql> FLUSH PRIVILEGES;
  mysql> exit;
  $ mysql -u django_dashboard -p
  password
