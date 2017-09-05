@@ -35,16 +35,17 @@ class PasswordEncryptor:
 
 
     @classmethod
-    def encrypt(cls, plaintext: str) -> bytes:
+    def c_encrypt(cls, plaintext: str) -> bytes:
         """ Performs AES encryption on plaintext,
             returning the cipher-text data in bytes.
         """
         return cls._cipher.encrypt(bytes(plaintext, cls._encoding))
 
     @classmethod
-    def decrypt(cls, encrypted: bytes) -> str:
+    def c_decrypt(cls, encrypted: bytes) -> str:
         cipher = cls._generate_cipher(cls._key, cls._iv)
-        return cipher.decrypt(encrypted)
+        decrypted = cipher.decrypt(encrypted)
+        return decrypted.decode(encoding=cls._encoding)
 
 
     def __init__(self, key=None):
@@ -69,5 +70,6 @@ class PasswordEncryptor:
 
     def decrypt(self, encrypted: bytes) -> str:
         cipher = self._generate_cipher(self._key, self._iv)
-        return cipher.decrypt(encrypted)
+        decrypted = cipher.decrypt(encrypted)
+        return decrypted.decode(encoding=self._encoding)
 
