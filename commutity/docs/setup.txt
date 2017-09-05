@@ -9,7 +9,7 @@ As the root user, create a database user 'django_dashboard'
  mysql> exit;
  $ mysql -u django_dashboard -p
  password
- mysql> CREATE DATABASE Users;
+ mysql> CREATE DATABASE CommutityDB;
 
 
 Install Python MySQL packages:

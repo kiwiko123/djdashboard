@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<properties>
+    <entity name="database_credentials">
+    	<username>djdashboard_admin</username>
+        <password>password</password>
+    </entity>
+</properties>
