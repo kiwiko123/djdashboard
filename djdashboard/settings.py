@@ -78,7 +78,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'CommutityDB',
-        'USER': 'django_dashboard',
+        'USER': 'djdashboard_admin',
         'PASSWORD': 'password',
         'HOST': 'localhost',
         'PORT': '3306'

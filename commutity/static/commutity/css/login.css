@@ -1,0 +1,20 @@
+.login-text-box {
+	display: block;
+}
+
+.login-box-label {
+	margin: 0;
+}
+
+#login-body {
+	margin-left: 5%;
+}
+
+#login-username-box {
+	margin-bottom: 5%;
+}
+
+#btn-login {
+	width: 20%;
+	margin-top: 5%;
+}

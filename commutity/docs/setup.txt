@@ -3,11 +3,13 @@ Install MySQL on your local machine.
 As the root user, create a database user 'django_dashboard'
 
  $ mysql -u root -p
- mysql> CREATE USER 'django_dashboard'@'localhost IDENTIFIED BY 'password';
+ mysql> CREATE USER 'djdashboard_admin'@'localhost IDENTIFIED BY 'password';
+ mysql> GRANT ALL PRIVILEGES ON *.* TO 'djdashboard_admin'@'localhost';
+ mysql> FLUSH PRIVILEGES;
  mysql> exit;
  $ mysql -u django_dashboard -p
  password
- mysql> CREATE DATABASE Users;
+ mysql> CREATE DATABASE CommutityDB;
 
 
 Install Python MySQL packages:
@@ -15,3 +17,7 @@ Install Python MySQL packages:
 
   * If an error about mysql_config occurs, issue the following, then repeat:
   $ sudo apt-get install libmysqlclient-dev
+
+
+DEPENDENCIES - install with pip3
+ * pycrypto
