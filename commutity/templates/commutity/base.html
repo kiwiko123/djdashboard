@@ -49,6 +49,10 @@
 				navButtons.each(function(index, li){ $(li).click(function(){ _makeNavButtonActive(li);  }) });
 			}
 
+			function fieldEmpty(element) {
+				return $(element).val().length == 0;
+			}
+
 			$(document).ready(function() {
 				initNavBar();
 			});

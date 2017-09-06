@@ -38,9 +38,9 @@
 	background-color: #217532;
 }
 
-.float-over {
-	position: absolute;
-	z-index: 1;
+.text-box-invalid {
+	border-color: red;
+	border-style: solid;
 }
 
 #header-banner-title-text {
