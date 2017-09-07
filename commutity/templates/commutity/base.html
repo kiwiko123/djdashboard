@@ -14,7 +14,9 @@
 
 	<header>
 		<div id="login-header">
-			<p>Hello, boo</p>
+			{% if request.session.user %}
+				<p>{{ request.session.user.first_name }} {{ request.session.user.last_name }}</p>
+			{% endif %}
 		</div>
 
 		<div role="banner" class="header-banner">
@@ -28,6 +30,7 @@
 				<li class="nav-bar-horizontal nav-bar-active" id="nav-bar-home"><a href="{% url 'commutity:index' %}">Home</a></li>
 				<li class="nav-bar-horizontal" id="nav-bar-get-started"><a href="{% url 'commutity:login' %}">Get Started</a></li>
 				<li class="nav-bar-horizontal" id="nav-bar-about"><a>About</a></li>
+				<li class="nav-bar-horizontal" id="nav-bar-logout"><a href="{% url 'commutity:logout' %}">Log Out</a></li>
 			</ul>
 		</div>
 

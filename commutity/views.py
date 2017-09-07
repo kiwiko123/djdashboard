@@ -1,6 +1,6 @@
 import logging
 import django.core.exceptions
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, Http404
 from django.shortcuts import redirect, render
 from django.views import generic
 from . import helper, models
@@ -34,11 +34,11 @@ class LoginView(generic.TemplateView):
         if self._verify_user(username, password):
             # valid - login, redirect home
             logger.info('login user "{0}"'.format(username))
-            request.session[username] = info.LoginInfo(username)
+            request.session['user'] = helper.get_user(username)
+            request.session['info'] = info.LoginInfo(username)
             context['username'] = username
             return render(request, template_name=IndexView.template_name, context=context)
         else:
-            # invalid - raise exception
             context.clear()
             context[ERROR_CTX] = 'invalid username "{0}"'.format(username)
         return render(request, template_name=self.template_name, context=context)
@@ -49,3 +49,20 @@ class LoginView(generic.TemplateView):
         credentials = helper.get_credentials(username)
         manager = PasswordEncryptor(key=credentials.key, iv=credentials.iv)
         return manager.encrypt(password) == credentials.password
+
+
+class LogoutView(generic.TemplateView):
+    template_name = IndexView.template_name
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        print('get logout')
+        if 'user' in request.session:
+            user = request.session['user']
+            info = request.session['info']
+            info.log_out()
+            print(helper.default_obj_str(info, 'username', 'time_in', 'time_out'))
+            del request.session['user']
+        else:
+            # raise Http404('user not recorded in session')
+            return redirect('commutity:index')
+        return super().get(request)
