@@ -4,6 +4,7 @@ import re
 import django.core.exceptions
 import commutity
 from commutity.models import Credentials, User
+from commutity.utilities import exceptions
 
 
 def get_app_directory() -> pathlib.Path:
@@ -35,7 +36,7 @@ def get_credentials(username: str) -> Credentials:
 	"""
 	user = get_user(username)
 	if user is None:
-		raise ValueError('username "{0}" does not exist'.format(username))
+		raise exceptions.AuthenticationError('username "{0}" does not exist'.format(username))
 
 	try:
 		return Credentials.objects.get(user=user)
