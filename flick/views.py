@@ -16,3 +16,17 @@ admin_username = ''
 # Create your views here.
 class IndexView(generic.TemplateView):
     template_name = 'flick/index.html'
+
+
+class LoginView(generic.TemplateView):
+    template_name = 'flick/login.html'
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        """ Invoked on page load """
+        assert request.method == 'GET', 'expected GET request; received {0}'.format(request.method)
+        return super().get(request)
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        """ Invoked on page submit """
+        assert request.method == 'POST', 'expected POST request; received {0}'.format(request.method)
+        return render(request, template_name=self.template_name, context=context)

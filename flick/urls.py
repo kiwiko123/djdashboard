@@ -4,4 +4,5 @@ from . import views
 app_name = 'flick'
 urlpatterns = [
         url(r'^$', views.IndexView.as_view(), name='index'),
+        url(r'^login/$', views.LoginView.as_view(), name='login'),
     ]
