@@ -5,8 +5,8 @@
 
 <html lang="en">
 	{% block head %}
-		<link rel="stylesheet" type="text/css" href="{% static "flick/css/login.css" %}">
-
+		<script type="text/javascript" src="{% static 'flick/js/common.js' %}"></script>
+		<link rel="stylesheet" type="text/css" href="{% static 'flick/css/login.css' %}">
 		<title>Flick - Login</title>
 	{% endblock %}
 
@@ -26,14 +26,14 @@
 			</form>
 
 			<div id="create-user-body">
-				<p>Don't have an account yet? <a>Make one.</a></p>
+				<p>Don't have an account yet? <a href="{% url 'flick:create-account' %}">Make one.</a></p>
 			</div>
 		</div>
 
 		<script type="text/javascript">
 			/* Adds a red, bolded border around inputElement's textbox if the field is empty */
 			function _validateLoginInput(inputElement) {
-				if (fieldEmpty(inputElement))
+				if (common.fieldEmpty(inputElement))
 				{
 					$(inputElement).addClass("text-box-invalid");
 				}
