@@ -7,13 +7,14 @@
 	{% block head %}
 		<title>Flick - Create Account</title>
 		<link rel="stylesheet" type="text/css" href="{% static "flick/css/create-account.css" %}">
+		<script type="text/javascript" src="{% static 'flick/js/common.js' %}"></script>
 	{% endblock %}
 
 	{% block body %}
 		<div class="form-container" id="create-body">
 			<h2>Create an Account</h2>
 
-			<form action="{% url 'flick:create-account' %}" method="post">
+			<form action="{% url 'flick:create-account' %}" method="post" id="create-account-form">
 				{% csrf_token %}
 
 				<div class="input-container">
@@ -36,12 +37,19 @@
 				<button type="submit" class="btn btn-success btn-md disabled" id="btn-create">Create</button>
 			</form>
 		</div>
+	{% endblock %}
 
+	{% block script %}
 		<script type="text/javascript">
-
 			$(document).ready(function(){
+				makeNavButtonActive('#nav-bar-get-started');
+				common.requireFieldNonEmpty("#first-name-box");
+				common.requireFieldNonEmpty("#last-name-box");
+				common.requireFieldNonEmpty("#email-address-box");
+				common.requireFieldNonEmpty("#username-box");
+				common.requireFieldNonEmpty("#password-box");
+				common.disableButtonUnlessAllFieldsFilled("#btn-create", "form#create-account-form :input");
 			});
 		</script>
 	{% endblock %}
-
 </html>

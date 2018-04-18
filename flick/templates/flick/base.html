@@ -25,8 +25,13 @@
 
         {% block header %}
         {% endblock %}
+	</header>
 
-		<script type="text/javascript">
+
+	<body>
+		{% block body %}
+        {% endblock %}
+        <script type="text/javascript">
 			function switchActiveNavBarPerspective(elementPrevious, elementCurrent) {
 				$(elementPrevious).removeClass("nav-bar-active");
 				$(elementCurrent).addClass("nav-bar-active");
@@ -42,21 +47,14 @@
 				$("#nav-bar-list li").each(function(index, li){ $(li).click(function(){ makeNavButtonActive(li); }) });
 			}
 
-			// function fieldEmpty(element) {
-			// 	return $(element).val().length === 0;
-			// }
-
 			$(document).ready(function() {
 				initNavBar();
 				//makeNavButtonActive("#nav-bar-home");
 			});
 		</script>
-	</header>
 
-
-	<body>
-		{% block body %}
-        {% endblock %}
+		{% block script %}
+		{% endblock %}
 	</body>
 
 	<footer>
