@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+
+{% extends "flick/base.html" %}
+{% load static %}
+
+<html lang="en">
+
+    {% block head %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.12/css/all.css" integrity="sha384-G0fIWCsCzJIMAVNQPfjH08cyYaUtMwjJwqiRKxxE/rx96Uroj1BtIQ6MLJuheaO9" crossorigin="anonymous">
+    {% endblock %}
+
+	{% block body %}
+    <div id="lights-container">
+        <ul class="no-bullets" id="lights-list">
+            {% for light in lights %}
+            <li id="light-{{ light.uniqueid }}" data-url="{% url 'flick:light-controller' %}">{{ light.name }}</li>
+            <button type="button" class="btn btn-warning" id="btn-light-{{ forloop.counter }}"><i class="fas fa-sun"></i> Power</button>
+            {% endfor %}
+        </ul>
+    </div>
+	{% endblock %}
+
+    {% block script %}
+    <script type="text/javascript">
+
+
+        $(document).ready(function(){
+            makeNavButtonActive("#nav-bar-lights");
+            $("#lights-list li").each(function(index, li) {
+
+                $(li).click(function(e) {
+                    e.preventDefault();
+
+                    $.ajax({
+                        type: "POST",
+                        url: $(this).data("url"),
+                        data: {
+                            id: $(this).attr("id"),
+                            command: 'toggle'
+                        },
+                        success: function(){  }
+                    });
+                })
+            });
+        });
+    </script>
+	{% endblock %}
+
+</html>
