@@ -4,8 +4,10 @@ from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 
+import json
 import logging
 import re
+import urllib.error
 
 from .lights.controller import LightController
 
@@ -63,9 +65,15 @@ class LightControllerView(generic.TemplateView):
 
     def get(self, request: HttpRequest) -> HttpResponse:
         print('get')
-        self._refresh_lights()
-        lights = sorted(self.lights.values(), key=lambda d: d['name'])
-        context = {'lights': lights}
+        lights = []
+
+        try:
+            lights = self._refresh_lights()
+        except urllib.error.URLError as e:
+            e.reason = 'check bridge_ip_address and admin_username global variables in views.py'
+            raise
+
+        context = {'lights': lights, 'lights_json': json.dumps(lights)}
         return render(request, template_name=self.template_name, context=context)
 
 
@@ -87,6 +95,7 @@ class LightControllerView(generic.TemplateView):
         REFRESH
         """
         context = {}
+
         if 'command' not in data:
             raise KeyError('failed to receive "command" from AJAX response')
         command = data['command'].upper()
@@ -97,7 +106,10 @@ class LightControllerView(generic.TemplateView):
         elif command == 'REFRESH':
             pass
 
-        self._refresh_lights()
+        lights = self._refresh_lights()
+        context['lights'] = lights
+        context['lights_json'] = json.dumps(lights)
+
         return context
 
 
@@ -110,6 +122,7 @@ class LightControllerView(generic.TemplateView):
         """
         html_id = data['uniqueid']
         unique_id = self._extract_light_id(html_id)
+        print(self.lights.keys())
         light_data = self.lights[unique_id]
         light_number = light_data['number']
         self.controller.toggle(light_number, light_data)
@@ -140,10 +153,17 @@ class LightControllerView(generic.TemplateView):
 
 
     @classmethod
-    def _refresh_lights(cls) -> None:
+    def _refresh_lights(cls) -> [dict]:
         """
         Updates cls.lights with refreshed information.
         Stores lights in a dictionary with a single light's uniqueid as each key,
         and serialized JSON dictionary of that light as each value.
         """
         cls.lights = {light['uniqueid']: light for light in cls.controller.lights()}
+        lights = []
+        for light in cls.lights.values():
+            info = {k: light[k] for k in ('uniqueid', 'name', 'number')}
+            info['on'] = light['state']['on']
+            lights.append(info)
+
+        return sorted(lights, key=lambda d: d['name'])

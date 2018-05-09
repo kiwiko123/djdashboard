@@ -13,13 +13,13 @@
 
 	{% block body %}
     <div id="lights-container">
-        <button type="button" class="btn btn-info" id="btn-refresh" data-url="{% url 'flick:light-controller' %}"><i class="fas fa-sync"></i> Refresh</button>
+        <button type="button" class="btn btn-info" id="btn-refresh" data-url="{% url 'flick:light-controller' %}"><i id="btn-refresh-span" class="fas fa-sync"></i> Refresh</button>
         <ul class="no-bullets" id="lights-list">
             {% for light in lights %}
-            <!--<div id="light-container-{{ forloop.counter }}">-->
+            <div id="light-container-{{ forloop.counter }}">
                 <li id="light-{{ light.uniqueid }}" data-url="{% url 'flick:light-controller' %}">{{ light.name }}</li>
-                <button type="button" class="btn btn-warning" data-url="{% url 'flick:light-controller' %}" data-uniqueid="btn-light-{{ light.uniqueid }}"><i class="fas fa-sun"></i> Power</button>
-            <!--</div>-->
+                <button type="button" class="btn btn-default" data-url="{% url 'flick:light-controller' %}" data-uniqueid="btn-light-{{ light.uniqueid }}"><i id="btn-light-span-{{ light.number }}" class="fas"></i></button>
+            </div>
             {% endfor %}
         </ul>
     </div>
@@ -27,15 +27,34 @@
 
     {% block script %}
     <script type="text/javascript">
+        function _revertRefreshButton() {
+            $("#btn-refresh").toggleClass("btn-success btn-info");
+            $("#btn-refresh-span").toggleClass("fa-check fa-sync");
+        }
+
+        function _confirmRefreshButton() {
+            $("#btn-refresh").toggleClass("btn-info btn-success");
+            $("#btn-refresh-span").removeClass("fa-spin");
+            $("#btn-refresh-span").toggleClass("fa-check fa-sync")
+        }
+
+        function refreshButtonSuccess() {
+            setTimeout(_confirmRefreshButton, 500);
+            setTimeout(_revertRefreshButton, 2000);
+            initLightButtons();
+        }
+
         function bindRefreshButton() {
             $("#btn-refresh").click(function(e) {
                 e.preventDefault();
+                $("#btn-refresh-span").addClass("fa-spin");
                 $.ajax({
                     type: "POST",
                     url: $(this).data("url"),
                     data: {
                         command: "refresh"
-                    }
+                    },
+                    success: refreshButtonSuccess
                 });
             });
         }
@@ -51,13 +70,31 @@
                             command: "toggle",
                             uniqueid: $(this).data("uniqueid")
                         },
+                        success: function(){ $(button).children("i").toggleClass("fa-toggle-on fa-toggle-off"); }
                     });
                 })
             });
         }
 
+        function initLightButtons() {
+            var lights = JSON.parse("{{ lights_json|escapejs }}");
+            for (var i = 0; i < lights.length; ++i) {
+                var light = lights[i];
+                var spanHtmlID = "#btn-light-span-" + light["number"];
+                if (light["on"]) {
+                    $(spanHtmlID).removeClass("fa-toggle-off");
+                    $(spanHtmlID).addClass("fa-toggle-on");
+                }
+                else {
+                    $(spanHtmlID).removeClass("fa-toggle-on");
+                    $(spanHtmlID).addClass("fa-toggle-off");
+                }
+            }
+        }
+
         $(document).ready(function(){
             makeNavButtonActive("#nav-bar-lights");
+            initLightButtons();
             bindRefreshButton();
             bindLightButtons();
         });
