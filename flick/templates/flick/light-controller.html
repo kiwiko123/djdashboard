@@ -13,10 +13,13 @@
 
 	{% block body %}
     <div id="lights-container">
+        <button type="button" class="btn btn-info" id="btn-refresh" data-url="{% url 'flick:light-controller' %}"><i class="fas fa-sync"></i> Refresh</button>
         <ul class="no-bullets" id="lights-list">
             {% for light in lights %}
-            <li id="light-{{ light.uniqueid }}" data-url="{% url 'flick:light-controller' %}">{{ light.name }}</li>
-            <button type="button" class="btn btn-warning" id="btn-light-{{ forloop.counter }}"><i class="fas fa-sun"></i> Power</button>
+            <!--<div id="light-container-{{ forloop.counter }}">-->
+                <li id="light-{{ light.uniqueid }}" data-url="{% url 'flick:light-controller' %}">{{ light.name }}</li>
+                <button type="button" class="btn btn-warning" data-url="{% url 'flick:light-controller' %}" data-uniqueid="btn-light-{{ light.uniqueid }}"><i class="fas fa-sun"></i> Power</button>
+            <!--</div>-->
             {% endfor %}
         </ul>
     </div>
@@ -24,26 +27,39 @@
 
     {% block script %}
     <script type="text/javascript">
+        function bindRefreshButton() {
+            $("#btn-refresh").click(function(e) {
+                e.preventDefault();
+                $.ajax({
+                    type: "POST",
+                    url: $(this).data("url"),
+                    data: {
+                        command: "refresh"
+                    }
+                });
+            });
+        }
 
-
-        $(document).ready(function(){
-            makeNavButtonActive("#nav-bar-lights");
-            $("#lights-list li").each(function(index, li) {
-
-                $(li).click(function(e) {
+        function bindLightButtons() {
+            $("#lights-list button").each(function(index, button) {
+                $(button).click(function(e) {
                     e.preventDefault();
-
                     $.ajax({
                         type: "POST",
                         url: $(this).data("url"),
                         data: {
-                            id: $(this).attr("id"),
-                            command: 'toggle'
+                            command: "toggle",
+                            uniqueid: $(this).data("uniqueid")
                         },
-                        success: function(){  }
                     });
                 })
             });
+        }
+
+        $(document).ready(function(){
+            makeNavButtonActive("#nav-bar-lights");
+            bindRefreshButton();
+            bindLightButtons();
         });
     </script>
 	{% endblock %}

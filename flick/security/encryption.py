@@ -18,6 +18,9 @@ class PasswordEncryptor:
     Or, more securely, initialize an object to use a custom key.
     """
     _alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789_-=+!@#$%^&*()'
+    __encoding = 'utf-8'
+    _ckey = bytes('fah82bF4CodQvGhf'[:16], encoding=__encoding)
+    _civ = b'\x1aKas88\x04W\xeef\x0e-\xb4lm3'
 
     @staticmethod
     def _generate_cipher(key: bytes, iv: bytes) -> Crypto.Cipher.AES:
@@ -31,7 +34,7 @@ class PasswordEncryptor:
     @classmethod
     def generate_string(cls, size=Crypto.Cipher.AES.block_size, alphabet=None) -> str:
         """
-        Generates and returns a random string of length 'size'.
+        Generates and returns a random (plaintext) string of length 'size'.
         'alphabet' is a string of characters to pull from.
         By default, 'alphabet' consists of 26 letters, 10 digits, and several symbol-like characters.
         """
@@ -42,17 +45,15 @@ class PasswordEncryptor:
         for i in range(size):
             c = alphabet[random.randrange(alphabet_size)]
             result += c.lower() if random.randrange(2) else c.upper()
+
         return result
 
     @classmethod
     def generate_iv(cls) -> bytes:
+        """
+        Generates and returns a random initialization vector of size 16.
+        """
         return Crypto.Random.new().read(Crypto.Cipher.AES.block_size)
-
-
-    __encoding = 'utf-8'
-    _ckey = bytes('fah82bF4CodQvGhf'[:16], encoding=__encoding)
-    _civ = b'\x1aKas88\x04W\xeef\x0e-\xb4lm3'
-
 
     @classmethod
     def default_key(cls, decode=True) -> str or bytes:
@@ -79,7 +80,7 @@ class PasswordEncryptor:
         return cls.__encoding
 
     @classmethod
-    def set__encoding(cls, new_encoding: str) -> None:
+    def set_default_encoding(cls, new_encoding: str) -> None:
         """
         Override the default encoding (utf-8) used to encrypt/decrypt content.
         """
@@ -108,51 +109,78 @@ class PasswordEncryptor:
     def __init__(self, key=None, iv=None, encoding='utf-8'):
         """ 
         Initialize a new PasswordEncryptor object.
-        If {key,iv}='default', use the default class key;
+        If {key,iv}='default', use the default class values;
         else if {key,iv}=None, randomly generate one.
-        If it is provided, it must be a 16-byte string (str with len 16).
+        Raises TypeError if key is not a string, or iv is not bytes.
+        Raises ValueError if key is not length 16.
+        Default encoding is utf-8.
 
-        Instance methods function the same as their class counterparts.
+        Instance methods function the same as their class counterparts;
+        see the class method docstrings for clarification.
         """
+        self._encoding = encoding
+        self._key = None
+        self._iv = None
+
         if key == 'default':
             key = self.default_key()
         elif key is None:
             key = self.generate_string(Crypto.Cipher.AES.block_size)
-        elif type(key) is not str:
-            raise TypeError('key must be a string; instead received {0}'.format(type(key)))
-        elif len(key) != Crypto.Cipher.AES.block_size:
-            raise ValueError('AES encryption requires a length-{0} string as a key'.format(Crypto.Cipher.AES.block_size))
 
         if iv == 'default':
             iv = self.default_iv()
         elif iv is None:
             iv = self.generate_iv()
-        elif type(iv) is not bytes:
-            raise TypeError('initialization vector must be a bytes object; instead received {0}'.format(type(iv)))
 
-        self._encoding = encoding
-        self._key = bytes(key[:16], self.__encoding)
-        self._iv = iv
+        self.key = key
+        self.iv = iv
 
     @property
-    def key(self, decode=True) -> str:
-        result = self._key
-        return result.decode(encoding=self.__encoding) if decode else result
+    def encoding(self) -> str:
+        return self._encoding
+
+    @encoding.setter
+    def encoding(self, new_encoding: str) -> None:
+        self._encoding = new_encoding
+
+    @property
+    def key(self) -> bytes:
+        return self._key
+
+    @key.setter
+    def key(self, new_key: str or bytes) -> None:
+        if type(new_key) is str:
+            if len(new_key) != Crypto.Cipher.AES.block_size:
+                raise ValueError('AES encryption requires a length-{0} string as a key'.format(Crypto.Cipher.AES.block_size))
+            self._key = bytes(new_key, self.encoding)
+        elif type(new_key) is bytes:
+            self.key = new_key.decode(encoding=self.encoding)
+        else:
+            raise TypeError('key must be a string or bytes; instead received {0}'.format(type(new_key)))
 
     @property
     def iv(self) -> bytes:
         return self._iv
 
+    @iv.setter
+    def iv(self, new_iv: bytes) -> None:
+        if type(new_iv) is not bytes:
+            raise TypeError('initialization vector must be a bytes object; instead received {0}'.format(type(new_iv)))
+        self._iv = new_iv
+
     def encrypt(self, plaintext: str) -> bytes:
-        cipher = self._generate_cipher(self._key, self.iv)
-        return cipher.encrypt(bytes(plaintext, self.__encoding))
+        cipher = self._generate_cipher(self.key, self.iv)
+        return cipher.encrypt(bytes(plaintext, self.encoding))
 
     def decrypt(self, encrypted: bytes) -> str:
-        cipher = self._generate_cipher(self._key, self.iv)
+        cipher = self._generate_cipher(self.key, self.iv)
         decrypted = cipher.decrypt(encrypted)
 
         try:
-            return decrypted.decode(encoding=self.__encoding)
+            return decrypted.decode(encoding=self.encoding)
         except UnicodeDecodeError:
             raise DecryptionError('failed to decrypt string; perhaps the key or initialization vector is incorrect')
 
+
+if __name__ == '__main__':
+    pass
