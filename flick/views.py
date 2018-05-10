@@ -6,7 +6,6 @@ from django.views.decorators.csrf import csrf_exempt
 
 import json
 import logging
-import re
 import urllib.error
 
 from .lights.controller import LightController
@@ -68,9 +67,10 @@ class LightControllerView(generic.TemplateView):
         lights = []
 
         try:
-            lights = self._refresh_lights()
+            lights = self.refresh_lights()
         except urllib.error.URLError as e:
             e.reason = 'check bridge_ip_address and admin_username global variables in views.py'
+            logger.error(e.reason)
             raise
 
         context = {'lights': lights, 'lights_json': json.dumps(lights)}
@@ -102,67 +102,64 @@ class LightControllerView(generic.TemplateView):
         logger.debug(command)
 
         if command == 'TOGGLE':
-            self._toggle_light(data)
+            self.toggle_light(data)
+            light_number = self._verify_light_number(data['number'])
+            context['toggled_light_number'] = json.dumps(light_number)
         elif command == 'REFRESH':
             pass
 
-        lights = self._refresh_lights()
+        lights = self.refresh_lights()
         context['lights'] = lights
         context['lights_json'] = json.dumps(lights)
 
         return context
 
 
-    def _toggle_light(self, data: dict):
+    def toggle_light(self, data: dict):
         """
         Toggles the given light represented by 'data'.
         If it's on, turns it off, and vice versa.
 
-        'data' is a JSON-serialized dictionary representing one light.
+        'data' is a JSON-serialized dictionary representing one light,
+        received from the AJAX request triggered when toggling a light on/off.
         """
-        html_id = data['uniqueid']
-        unique_id = self._extract_light_id(html_id)
-        print(self.lights.keys())
-        light_data = self.lights[unique_id]
-        light_number = light_data['number']
+        light_number = self._verify_light_number(data['number'])
+        light_data = self.lights[light_number]
         self.controller.toggle(light_number, light_data)
 
 
-
     @staticmethod
-    def _extract_light_id(html_id: str) -> str:
+    def _verify_light_number(number_from_data: str) -> str:
         """
-        Extracts the unique ID from the given HTML ID.
-        'html_id' is expected in the following form:
+        Verifies that number_from_data is an integer.
+        Returns the number as an `int` object.
 
-        "btn-light-{UNIQUE:ID}"
+        number_from_data is the value associated with the key 'number' from the AJAX response when toggling a light,
+        e.g., data['number'].
 
         Example:
-        'btn-light-00:11:22:33' -> '00:11:22:33'
+        '1' -> 1
 
-        Raises ValueError if html_id is completely unable to match the expected pattern.
-        Raises KeyError if the group name is mismatched.
+        Raises ValueError if number_from_data is not a string representation of an integer.
         """
-        pattern = 'btn-light-(?P<unique_id>.*)'
-        match = re.match(pattern, html_id)
-        if match is None:
-            raise ValueError('failed to extract unique id from "{0}"'.format(html_id))
-        if 'unique_id' not in match.groupdict():
-            raise KeyError('group "unique_id" not matched in pattern')
-        return match.group('unique_id')
+        number_from_data = number_from_data.strip()
+        if not number_from_data.isdigit():
+            raise ValueError(
+                'expected to receive an integer unique light number; instead received "{0}"'.format(number_from_data))
+        return int(number_from_data)
 
 
     @classmethod
-    def _refresh_lights(cls) -> [dict]:
+    def refresh_lights(cls) -> [dict]:
         """
         Updates cls.lights with refreshed information.
         Stores lights in a dictionary with a single light's uniqueid as each key,
         and serialized JSON dictionary of that light as each value.
         """
-        cls.lights = {light['uniqueid']: light for light in cls.controller.lights()}
+        cls.lights = {light['number']: light for light in cls.controller.lights()}
         lights = []
         for light in cls.lights.values():
-            info = {k: light[k] for k in ('uniqueid', 'name', 'number')}
+            info = {k: light[k] for k in ('name', 'number')}
             info['on'] = light['state']['on']
             lights.append(info)
 

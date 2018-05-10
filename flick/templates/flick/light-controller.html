@@ -9,16 +9,19 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.12/css/all.css" integrity="sha384-G0fIWCsCzJIMAVNQPfjH08cyYaUtMwjJwqiRKxxE/rx96Uroj1BtIQ6MLJuheaO9" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{% static 'flick/css/light-controller.css' %}">
     {% endblock %}
 
 	{% block body %}
     <div id="lights-container">
-        <button type="button" class="btn btn-info" id="btn-refresh" data-url="{% url 'flick:light-controller' %}"><i id="btn-refresh-span" class="fas fa-sync"></i> Refresh</button>
+        <div id="header-button-container" class="header-button">
+            <button type="button" class="btn btn-info" id="btn-refresh" data-url="{% url 'flick:light-controller' %}"><i id="btn-refresh-span" class="fas fa-sync"></i> Refresh</button>
+        </div>
         <ul class="no-bullets" id="lights-list">
             {% for light in lights %}
             <div id="light-container-{{ forloop.counter }}">
-                <li id="light-{{ light.uniqueid }}" data-url="{% url 'flick:light-controller' %}">{{ light.name }}</li>
-                <button type="button" class="btn btn-default" data-url="{% url 'flick:light-controller' %}" data-uniqueid="btn-light-{{ light.uniqueid }}"><i id="btn-light-span-{{ light.number }}" class="fas"></i></button>
+                <button type="button" class="btn btn-default" data-url="{% url 'flick:light-controller' %}" data-number="{{ light.number }}"><i id="btn-light-span-{{ light.number }}" class="fas fa-2x"></i></button>
+                <li class="same-line" id="light-{{ light.uniqueid }}" data-url="{% url 'flick:light-controller' %}">{{ light.name }}</li>
             </div>
             {% endfor %}
         </ul>
@@ -68,8 +71,16 @@
                         url: $(this).data("url"),
                         data: {
                             command: "toggle",
-                            uniqueid: $(this).data("uniqueid")
+                            number: $(this).data("number")
                         },
+                        /*
+                        success: function() {
+                            var toggledLightNumber = JSON.parse("{{ toggled_light_number|escapejs }}");
+                            alert(toggledLightNumber);
+                            var spanHtmlID = "#btn-light-span" + toggledLightNumber;
+                            $(spanHtmlID).toggleClass("fa-toggle-off fa-toggle-on");
+                        }
+                        */
                         success: function(){ $(button).children("i").toggleClass("fa-toggle-on fa-toggle-off"); }
                     });
                 })
