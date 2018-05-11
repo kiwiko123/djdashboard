@@ -1,5 +1,5 @@
-from django.http import HttpRequest, HttpResponse, Http404
-from django.shortcuts import redirect, render
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
@@ -9,6 +9,7 @@ import logging
 import urllib.error
 
 from .lights.controller import LightController
+from flick import security
 
 
 logger = logging.getLogger(__name__)
@@ -17,8 +18,7 @@ console_handler.setLevel(logging.DEBUG)
 logger.addHandler(console_handler)
 
 # flick#web admin
-bridge_ip_address = ''
-admin_username = ''
+bridge_ip_address, admin_username = security.setup.authenticate()
 
 # Create your views here.
 class IndexView(generic.TemplateView):

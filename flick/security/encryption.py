@@ -14,10 +14,11 @@ class DecryptionError(Exception):
 class PasswordEncryptor:
     """ 
     Utility class for performing standard 2-way AES encryption on text (e.g., passwords).
-    @classmethods provide quick and simple encryption/decryption using a default key.
+    @classmethods provide quick and simple encryption/decryption using a default key and initialization vector.
     Or, more securely, initialize an object to use a custom key.
     """
-    _alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789_-=+!@#$%^&*()'
+    alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789_-=+!@#$%^&*()'
+    required_length = Crypto.Cipher.AES.block_size
     __encoding = 'utf-8'
     _ckey = bytes('fah82bF4CodQvGhf'[:16], encoding=__encoding)
     _civ = b'\x1aKas88\x04W\xeef\x0e-\xb4lm3'
@@ -36,10 +37,11 @@ class PasswordEncryptor:
         """
         Generates and returns a random (plaintext) string of length 'size'.
         'alphabet' is a string of characters to pull from.
-        By default, 'alphabet' consists of 26 letters, 10 digits, and several symbol-like characters.
+        Set alphabet=None to default to 26 letters, 10 digits, and several symbol-like characters.
+        Access the alphabet constant through "PasswordEncryptor.alphabet".
         """
         if alphabet is None:
-            alphabet = cls._alphabet
+            alphabet = cls.alphabet
         alphabet_size = len(alphabet)
         result = ''
         for i in range(size):
