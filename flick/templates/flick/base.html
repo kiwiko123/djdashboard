@@ -7,7 +7,9 @@
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
 		<link rel="stylesheet" type="text/css" href="{% static "flick/css/common.css" %}">
 
-        <title>Flick</title>
+		{% block head %}
+		<title>Flick</title>
+		{% endblock %}
 	</head>
 
 	<header>
@@ -16,15 +18,21 @@
         <div id="nav-bar">
 			<ul class="no-bullets" id="nav-bar-list">
 				<li class="nav-bar-horizontal nav-bar-active" id="nav-bar-home"><a href="{% url 'flick:index' %}">Home</a></li>
-				<li class="nav-bar-horizontal" id="nav-bar-get-started"><a>Get Started</a></li>
 				<li class="nav-bar-horizontal" id="nav-bar-about"><a>About</a></li>
+				<li class="nav-bar-horizontal" id="nav-bar-get-started"><a href="{% url 'flick:login' %}">Get Started</a></li>
+                <li class="nav-bar-horizontal" id="nav-bar-lights"><a href="{% url 'flick:light-controller' %}">Lights</a></li>
 			</ul>
 		</div>
 
         {% block header %}
         {% endblock %}
+	</header>
 
-		<script type="text/javascript">
+
+	<body>
+		{% block body %}
+        {% endblock %}
+        <script type="text/javascript">
 			function switchActiveNavBarPerspective(elementPrevious, elementCurrent) {
 				$(elementPrevious).removeClass("nav-bar-active");
 				$(elementCurrent).addClass("nav-bar-active");
@@ -40,21 +48,14 @@
 				$("#nav-bar-list li").each(function(index, li){ $(li).click(function(){ makeNavButtonActive(li); }) });
 			}
 
-			function fieldEmpty(element) {
-				return $(element).val().length === 0;
-			}
-
 			$(document).ready(function() {
 				initNavBar();
-				makeNavButtonActive("#nav-bar-home");
+				//makeNavButtonActive("#nav-bar-home");
 			});
 		</script>
-	</header>
 
-
-	<body>
-		{% block body %}
-        {% endblock %}
+		{% block script %}
+		{% endblock %}
 	</body>
 
 	<footer>
