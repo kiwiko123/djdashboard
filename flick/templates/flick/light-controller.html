@@ -41,12 +41,26 @@
             $("#btn-refresh-span").toggleClass("fa-check fa-sync")
         }
 
+        /*
+         * Temporarily (for half a second) turns the refresh button green (bootstrap class "btn-success"),
+         * and the icon to a checkmark (font-awesome class "fa-check").
+         * Reverts after 2 seconds.
+         * Refreshes the light toggles with initLightButtons().
+         */
         function refreshButtonSuccess() {
             setTimeout(_confirmRefreshButton, 500);
             setTimeout(_revertRefreshButton, 2000);
             initLightButtons();
         }
 
+        /*
+         * Prepares the refresh button's functionality.
+         * When clicked, sends a POST request as:
+         *   {'command': 'refresh'}
+         * The refresh icon begins spinning to indicate progress.
+         * Upon success, temporarily provides a visual indication on the refresh button to indicate completion.
+         * Refreshes the light toggles with initLightButtons().
+         */
         function bindRefreshButton() {
             $("#btn-refresh").click(function(e) {
                 e.preventDefault();
@@ -62,6 +76,11 @@
             });
         }
 
+        /*
+         * Prepares each light's toggle-button functionality.
+         * Clicking the toggle sends POST request as {'command': 'toggle', 'number': <light-number>}.
+         * Upon success, updates the toggle to reflect the light's new state.
+         */
         function bindLightButtons() {
             $("#lights-list button").each(function(index, button) {
                 $(button).click(function(e) {
@@ -87,6 +106,12 @@
             });
         }
 
+        /*
+         * Parses the contextual template variable 'lights_json' received from LightControllerView.
+         * lights_json is a list of dictionaries, with keys 'name', 'number', and 'on' corresponding to each light.
+         * Lights that have 'on'=True will get an "on" toggle,
+         * and those that are 'off' get an "off" toggle.
+         */
         function initLightButtons() {
             var lights = JSON.parse("{{ lights_json|escapejs }}");
             for (var i = 0; i < lights.length; ++i) {
