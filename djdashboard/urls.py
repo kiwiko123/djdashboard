@@ -19,5 +19,6 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^commutity/', include('commutity.urls')),
-    url(r'^flick/', include('flick.urls'))
+    url(r'^flick/', include('flick.urls')),
+    url(r'^pazaak/', include('pazaak.urls'))
 ]

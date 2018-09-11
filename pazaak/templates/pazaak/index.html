@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+
+{% extends "pazaak/base.html" %}
+{% load static %}
+
+<html lang="en">
+    {% block body %}
+    <form action="{% url 'pazaak:play' %}" method="post" id="new-game-form">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-lg" id="btn-create">Play</button>
+    </form>
+    {% endblock %}
+</html>
