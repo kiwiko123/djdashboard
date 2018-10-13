@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'commutity.apps.CommutityConfig',
     'flick.apps.FlickConfig',
     'pazaak.apps.PazaakConfig',
 ]
