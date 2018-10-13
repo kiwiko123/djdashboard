@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+{% extends "pazaak/base.html" %}
+{% load static %}
+
+<html lang="en">
+    {% block head %}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.12/css/all.css" integrity="sha384-G0fIWCsCzJIMAVNQPfjH08cyYaUtMwjJwqiRKxxE/rx96Uroj1BtIQ6MLJuheaO9" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{% static 'pazaak/css/play.css' %}">
+    {% endblock %}
+
+    {% block body %}
+    <div class="game-body">
+        <div id="banner-winner">
+            <h2 id="banner-winner-text"></h2>
+        </div>
+
+        <div id="score-row" class="row">
+            <div class="column column-left-border">
+                <h2>You</h2>
+                <h2 id="score-player">
+                    {{ player.score }}
+                </h2>
+            </div>
+            <div class="column">
+                <h2>Opponent</h2>
+                <h2 id="score-opponent">
+                    {{ opponent.score }}
+                </h2>
+            </div>
+        </div>
+
+        <div id="game-row" class="row">
+            <div id="placed-cards-player" class="column column-left-border">
+            </div>
+            <div id="placed-cards-opponent" class="column">
+            </div>
+        </div>
+
+        <hr />
+
+        <div id="hand-row" class="row">
+            <div id="hand-player" class="column column-left-border">
+                {% for card in player.hand %}
+                    <div id="card-hand-{{ forloop.counter }}" class="horizontal-row pazaak-card">
+                        <p>{{ card.parity }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+            <div id="hand-opponent" class="column">
+                {% for card in opponent.hand %}
+                    <div id="card-opponent-{{ forloop.counter }}" class="horizontal-row pazaak-card">
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="action-row" class="row horizontal-row">
+            <button type="button" id="btn-end-turn" class="btn btn-success" data-url="{% url 'pazaak:play' %}"><i class="fas fa-play"> End Turn</i></button>
+            <button type="button" id="btn-stand" class="btn btn-warning" data-url="{% url 'pazaak:play' %}"><i class="fas fa-hand-paper"> Stand</i></button>
+            <button type="button" id="btn-restart" class="btn btn-danger" data-url="{% url 'pazaak:play' %}"><i class="fas fa-redo"> Start Over</i></button>
+        </div>
+    </div>
+
+    {% endblock %}
+
+    {% block script %}
+    <script type="text/javascript">
+        function toggleButton(buttonID) {
+            var isDisabled = $(buttonID).prop("disabled");
+            $(buttonID).prop("disabled", !isDisabled);
+        }
+
+        /**
+         * Toggles the "End Turn" and "Stand" buttons.
+         *
+         * @param enable boolean; true enables the buttons, and false disables.
+         */
+        function toggleActionButtons(enable) {
+            $("#btn-end-turn").prop("disabled", !enable);
+            $("#btn-stand").prop("disabled", !enable);
+        }
+
+        /**
+         * Updates the score, by replacing it with the score from the JSON response.
+         *
+         * @param scoreId the string of the score ID to update.
+         *          e.g., "#score-player"
+         * @param cardScore int or string; the score/value of the just-placed card.
+         */
+        function _updateScore(scoreId, cardScore) {
+            $(scoreId).text(cardScore);
+        }
+
+        /**
+         * Updates the Pazaak cards placed by a player.
+         * In other words, adds new Pazaak cards to the screen, based on the JSON response.
+         *
+         * @param placedDivId the string of the div ID to update.
+         *          e.g., "#placed-cards-player"
+         * @param playerOrOpponent a string of either "player" or "opponent", used to identify the appropriate HTML ID.
+         * @param card a string of the card parity and value, taken directly from the JSON response.
+         *          e.g., jsonResponse["player"]["last_placed"] -> "+4"
+         * @param placedLength an integer of the number of cards (including `card`) that have been placed.
+         *          Also taken directly from the JSON response; e.g., jsonResponse["player"]["size"]
+         */
+        function _addPlacedCard(placedDivID, playerOrOpponent, card, placedLength) {
+            var cardID = `card-placed-${playerOrOpponent}-${placedLength}`;
+            var divHtml = `<div id=${cardID} class="horizontal-row pazaak-card"><p>${card}</p></div>`;
+            $(placedDivID).append(divHtml);
+        }
+
+        function updatePlayerSide(jsonResponse, playerOrOpponent) {
+            var cardPlaced = jsonResponse["last_placed"]
+            var placedLength = jsonResponse["size"]
+            var cardScore = jsonResponse["score"];
+
+            _updateScore(`#score-${playerOrOpponent}`, cardScore);
+            _addPlacedCard(`#placed-cards-${playerOrOpponent}`, "player", cardPlaced, placedLength);
+        }
+
+        function onPlayerMove(jsonResponse) {
+            var status = jsonResponse["status"];
+            if (isGameOver(status)) {
+                var winner = jsonResponse["winner"];
+                return gameOver(winner);
+            }
+
+            if (status !== "stand-player") {
+                toggleActionButtons(false);
+                updatePlayerSide(jsonResponse, "player");
+                opponentReady("ready-opponent");
+            }
+            // else, action buttons should already be disabled
+        }
+
+        function onOpponentMove(jsonResponse) {
+            var status = jsonResponse["status"];
+            if (isGameOver(status)) {
+                var winner = jsonResponse["winner"];
+                return gameOver(winner);
+            }
+
+            if (status !== "stand-opponent") {
+                setTimeout(() => { updatePlayerSide(jsonResponse, "opponent"); }, 0.5 * 1000);
+                toggleActionButtons(true);
+            }
+        }
+
+        function opponentReady(playerStatus) {
+            $.ajax({
+                type: "POST",
+                data: {
+                    action: playerStatus,
+                    turn: "opponent"
+                },
+                success: onOpponentMove
+            });
+        }
+
+        function bindActionButton(buttonID, requestType, action, success) {
+            $(buttonID).click((e) => {
+                $.ajax({
+                    type: requestType,
+                    url: $(buttonID).data("url"),
+                    data: {
+                        "action": action,
+                        turn: "player"
+                    },
+                    "success": success
+                });
+            });
+        }
+
+        function isGameOver(status) {
+            return status === "game_over";
+        }
+
+        function gameOver(winner) {
+            toggleActionButtons(false);
+            var message = "";
+            switch (winner) {
+                case "player":
+                    message = "Player wins!";
+                    break;
+                case "opponent":
+                    message = "Opponent wins!";
+                    break;
+                default:
+                    message = "It's a tie!";
+            }
+
+            $("#banner-winner-text").text(message);
+        }
+
+        function _onRestartButton() {
+            var url = $("#btn-restart").data("url");
+            location.href = url;
+        }
+
+        $(document).ready(() => {
+            bindActionButton("#btn-end-turn", "POST", "end-turn", onPlayerMove);
+            bindActionButton("#btn-stand", "POST", "stand-player", () => { toggleActionButtons(false); opponentReady("ready-opponent"); });
+            bindActionButton("#btn-restart", "GET", "restart", _onRestartButton);
+        });
+    </script>
+    {% endblock %}
+</html>

@@ -9,7 +9,7 @@ import logging
 import urllib.error
 
 from .lights.controller import LightController
-from flick import security
+from .security import setup
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ console_handler.setLevel(logging.DEBUG)
 logger.addHandler(console_handler)
 
 # flick#web admin
-bridge_ip_address, admin_username = security.setup.authenticate()
+bridge_ip_address, admin_username = setup.authenticate()
 
 # Create your views here.
 class IndexView(generic.TemplateView):

@@ -1,5 +1,5 @@
+import base64
 import random
-
 try:
     import Crypto.Cipher
     import Crypto.Random
@@ -91,8 +91,7 @@ class PasswordEncryptor:
     @classmethod
     def c_encrypt(cls, plaintext: str) -> bytes:
         """
-        Performs AES encryption on plaintext,
-        returning the cipher-text data in bytes.
+        See instance method .encrypt(...).
         Uses the default key and initialization vector for convenience (over added security).
         """
         encryptor = cls(key='default', iv='default', encoding=cls.default_encoding())
@@ -101,11 +100,19 @@ class PasswordEncryptor:
     @classmethod
     def c_decrypt(cls, encrypted: bytes) -> str:
         """
-        Decrypts the encrypted-text argument, returning it in plain text.
+        See instance method .decrypt(...).
         Uses the default key and initialization vector for convenience (over added security).
         """
         encryptor = cls(key='default', iv='default', encoding=cls.default_encoding())
         return encryptor.decrypt(encrypted)
+
+
+    def _byteify(self, s: str) -> bytes:
+        """
+        Converts s to bytes, using self.encoding.
+        Returns s as bytes.
+        """
+        return bytes(s, encoding=self.encoding)
 
 
     def __init__(self, key=None, iv=None, encoding='utf-8'):
@@ -152,9 +159,9 @@ class PasswordEncryptor:
     @key.setter
     def key(self, new_key: str or bytes) -> None:
         if type(new_key) is str:
-            if len(new_key) != Crypto.Cipher.AES.block_size:
+            if len(new_key) < Crypto.Cipher.AES.block_size:
                 raise ValueError('AES encryption requires a length-{0} string as a key'.format(Crypto.Cipher.AES.block_size))
-            self._key = bytes(new_key, self.encoding)
+            self._key = self._byteify(new_key)
         elif type(new_key) is bytes:
             self.key = new_key.decode(encoding=self.encoding)
         else:
@@ -171,12 +178,24 @@ class PasswordEncryptor:
         self._iv = new_iv
 
     def encrypt(self, plaintext: str) -> bytes:
+        """
+        Performs AES encryption on plaintext, using the instance's key and initialization vector.
+        Encrypts plaintext, then encpdes the encrypted value using Base64.
+        Returns the encrypted, encoded bytes.
+        """
         cipher = self._generate_cipher(self.key, self.iv)
-        return cipher.encrypt(bytes(plaintext, self.encoding))
+        as_bytes = self._byteify(plaintext)
+        encrypted = cipher.encrypt(as_bytes)
+        return base64.b64encode(encrypted)
 
     def decrypt(self, encrypted: bytes) -> str:
+        """
+        Decodes 'encrypted' using Base64, then decrypts the encrypted-text argument.
+        Returns the plaintext value.
+        """
         cipher = self._generate_cipher(self.key, self.iv)
-        decrypted = cipher.decrypt(encrypted)
+        decoded = base64.b64decode(encrypted)
+        decrypted = cipher.decrypt(decoded)
 
         try:
             return decrypted.decode(encoding=self.encoding)
