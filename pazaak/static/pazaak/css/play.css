@@ -15,6 +15,11 @@
 .column-left-border {
     border-right-style: double;
     border-right-color: black;
+    padding-right: 2%;
+}
+
+.column-right-border {
+    padding-left: 2%;
 }
 
 .pazaak-card {
@@ -24,6 +29,10 @@
     margin-right: 2%;
     margin-bottom: 2%;
     background: black;
+}
+
+.hand-card {
+    cursor: pointer;
 }
 
 .horizontal-row {
@@ -38,4 +47,8 @@
     border-top: 1px solid #ccc;
     margin: 1em 0;
     padding: 0;
+}
+
+.icon-turn {
+    float: right;
 }

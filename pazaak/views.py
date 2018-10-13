@@ -4,10 +4,15 @@ from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 
-import json
+import re
 
 from .game import cards
-from .game.game import PazaakGame
+from .game.game import PazaakGame, Turn
+
+
+def _init_game() -> PazaakGame:
+    return PazaakGame(cards.random_cards(4, positive_only=False))
+
 
 # Create your views here.
 class IndexView(generic.TemplateView):
@@ -25,7 +30,13 @@ class IndexView(generic.TemplateView):
 
 class PlayView(generic.TemplateView):
     template_name = 'pazaak/play.html'
-    _game = PazaakGame(cards.random_cards(4, positive_only=False, bound=5))
+    _game = _init_game()
+    _g_PLAYER = 'player'
+    _g_OPPONENT = 'opponent'
+    
+    @classmethod
+    def _get_game(cls) -> PazaakGame:
+        return cls._game
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
@@ -34,8 +45,15 @@ class PlayView(generic.TemplateView):
 
     def get(self, request: HttpRequest) -> HttpResponse:
         print('GET - PlayView')
-        context = {'player': self._game.player, 'opponent': self._game.opponent, 'status': 'start'}
-        PlayView._game = PazaakGame(cards.random_cards(4, positive_only=False))
+        PlayView._game = _init_game()
+
+        move = cards.random_card(positive_only=True, bound=self._get_game().max_modifier)
+        self._get_game().end_turn(self._get_game().player, move)
+
+        context = {'player': self._get_game().player,
+                   'opponent': self._get_game().opponent,
+                   'player_move': move.modifier,
+                   'status': 'start'}
         return render(request, self.template_name, context=context)
 
 
@@ -53,12 +71,15 @@ class PlayView(generic.TemplateView):
 
 
     def _process_post(self, post_data: dict) -> dict:
-        if self._game.game_over():
+        if self._get_game().game_over():
             return self._process_game_over()
 
         context = self._process_player_move(post_data)
-        content = self._game.json()
-        turn = post_data['turn']
+        turn = context['turn']
+        content = self._get_game().json()
+
+        switch = {Turn.PLAYER.value: Turn.PLAYER, Turn.OPPONENT.value: Turn.OPPONENT}
+        turn = switch[turn]
         assert turn in content, 'expected turn to be one of ("player", "opponent")'
         context.update(content[turn])
         return context
@@ -72,36 +93,53 @@ class PlayView(generic.TemplateView):
         action = action.strip().lower()
         context = {}
         status = ''
+        turn = None
 
-        # player end turn
-        if action == 'end-turn':
+        # player ends turn - the opponent makes a move now
+        if action == 'end-turn-player':
             status = 'play'
-            move = cards.random_card(positive_only=True, bound=self._game.max_modifier)
-            self._game.make_move(self._game.player, move)
-        elif action == 'ready-opponent':
-            move = cards.random_card(positive_only=True, bound=self._game.max_modifier)
-            self._game.make_move(self._game.opponent, move)
-            status = 'end-turn-opponent'
+            turn = Turn.OPPONENT
+            move = cards.random_card(positive_only=True, bound=self._get_game().max_modifier)
+            self._get_game().end_turn(self._get_game().opponent, move)
+
+        # opponent ends turn - the player makes a move now
+        elif action == 'end-turn-opponent':
+            status = 'play'
+            turn = Turn.PLAYER
+            move = cards.random_card(positive_only=True, bound=self._get_game().max_modifier)
+            self._get_game().end_turn(self._get_game().player, move)
+
+        elif action == 'hand-player':
+            status = 'play'
+            id_of_clicked_card = post_data['card']
+
         elif action == 'stand-player':
-            self._game.player.stand()
+            self._get_game().player.stand()
             status = 'stand-player'
+
         else:
             pass
 
         context['status'] = status
+        context['turn'] = turn.value
         return context
 
 
     def _process_game_over(self) -> dict:
-        winner_code = self._game.winner()
-        assert winner_code is not None, 'game is not over'
+        winner_code = self._get_game().winner()
+        assert winner_code != self._get_game().GAME_ON, 'game is not over'
         switch = {
-            self._game.PLAYER_WINS: 'player',
-            self._game.OPPONENT_WINS: 'opponent',
-            self._game.TIE: 'tie'
+            self._get_game().PLAYER_WINS: 'player',
+            self._get_game().OPPONENT_WINS: 'opponent',
+            self._get_game().TIE: 'tie'
         }
 
         return {
             'status': 'game_over',
             'winner': switch[winner_code]
         }
+
+    @staticmethod
+    def _extract_card_id(card_id: str) -> int:
+        pattern = '^card-[player|opponent]-hand-?P<index>(\w)$'
+        match = re.match(pattern, card_id)

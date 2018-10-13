@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'commutity.apps.CommutityConfig',
-    'flick.apps.FlickConfig'
+    'flick.apps.FlickConfig',
+    'pazaak.apps.PazaakConfig',
 ]
 
 MIDDLEWARE = [
