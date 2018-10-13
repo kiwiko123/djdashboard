@@ -12,6 +12,15 @@ class PazaakCard:
     def __repr__(self) -> str:
         return '{0}({1})'.format(type(self).__name__, self.parity())
 
+    def __str__(self) -> str:
+        return repr(self)
+
+    def __hash__(self) -> int:
+        return hash(str(self))
+
+    def __eq__(self, other: 'PazaakCard') -> bool:
+        return isinstance(other, PazaakCard) and self.modifier == other.modifier
+
     @property
     def modifier(self) -> int:
         return self._modifier

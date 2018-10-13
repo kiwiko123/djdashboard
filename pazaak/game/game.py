@@ -1,22 +1,36 @@
+import enum
 import random
+import time
 from pazaak.game import cards
 from pazaak.game.cards import PazaakCard
 from pazaak.game.players import PazaakPlayer
+from pazaak.game.data_structures.hash_tables import MultiSet
 
 
 _HAND_SIZE = 4
 _MAX_MODIFIER = 10
 
-_PLAYER_FLAG = 0
-_OPPONENT_FLAG = 1
+
+class Turn(enum.Enum):
+    PLAYER = 'player'
+    OPPONENT = 'opponent'
+
+
+class GameOverError(Exception):
+    pass
 
 
 class PazaakGame:
-
+    GAME_ON = 0
     PLAYER_WINS = 1
-    OPPONENT_WINS = -1
-    TIE = 0
+    OPPONENT_WINS = 2
+    TIE = 3
     _WINNING_SCORE = 20
+
+    _turn_switch = {
+        Turn.PLAYER: Turn.OPPONENT,
+        Turn.OPPONENT: Turn.PLAYER
+    }
 
     def __init__(self, initial_pool: [PazaakCard], hand_size=_HAND_SIZE, max_modifier=_MAX_MODIFIER):
         self._initial_pool = initial_pool
@@ -27,8 +41,9 @@ class PazaakGame:
         opponent_hand = self._draw_hand(opponent_cards)
         player_hand = self._draw_hand(self._initial_pool)
 
-        self._opponent = PazaakPlayer(opponent_hand)
-        self._player = PazaakPlayer(player_hand)
+        self._opponent = PazaakPlayer(opponent_hand, Turn.OPPONENT.value, MultiSet)
+        self._player = PazaakPlayer(player_hand, Turn.PLAYER.value)
+        self._turn = Turn.PLAYER
 
     @property
     def player(self) -> PazaakPlayer:
@@ -42,52 +57,69 @@ class PazaakGame:
     def max_modifier(self) -> int:
         return self._max_modifier
 
+    @property
+    def turn(self) -> Turn:
+        return self._turn
+
+    @classmethod
+    def _other_turn(cls, player: PazaakPlayer) -> Turn:
+        return cls._turn_switch[player]
+
+    def _other_player(self, player: PazaakPlayer) -> PazaakPlayer:
+        return self.player if player == self.opponent else self.opponent
+
+
     def start(self) -> None:
-        self._print_game_status()
+        winner = ''
+        self._print_player_game(self.player)
+        self._print_player_game(self.opponent)
 
         while not self.game_over():
-            player_move = self._get_player_move()
-            self.make_move(self.player, player_move)
-            self._print_game_status()
+            try:
+                player_move = self._get_player_move()
+                self.end_turn(self.player, player_move)
+                self._print_player_game(self.player)
 
-            opponent_move = self._get_opponent_move()
-            self.make_move(self.opponent, opponent_move)
-            self._print_game_status()
+                opponent_move = self._get_opponent_move()
+                self.end_turn(self.opponent, opponent_move)
+                self._print_player_game(self.opponent, show_hand=True)
+                time.sleep(0.5)
+
+            except GameOverError as e:
+                winner = str(e)
+                break
+
+        if not winner:
+            winner = self.winner()
+        print('Winner: {0}!'.format(winner))
 
 
     def game_over(self) -> bool:
-        return self.winner() is not None
+        return self.winner() != self.GAME_ON
 
 
     def winner(self) -> int:
-        if self.player.is_standing and self.opponent.is_standing:
-            winning_player = max([self.player, self.opponent], key=lambda p: (p.score < self._WINNING_SCORE, p.score))
-            result = self.PLAYER_WINS if winning_player is self.player else self.OPPONENT_WINS
-        elif self.opponent.score > self._WINNING_SCORE and self.player.score <= self._WINNING_SCORE:
-            result = self.PLAYER_WINS
-        elif self.player.score > self._WINNING_SCORE and self.opponent.score <= self._WINNING_SCORE:
-            result = self.OPPONENT_WINS
-        elif len(self.player.placed) >= 9 and self.player.score <= self._WINNING_SCORE:
-            result = self.PLAYER_WINS
-        elif len(self.opponent.placed) >= 9 and self.opponent.score <= self._WINNING_SCORE:
-            result = self.OPPONENT_WINS
-        elif self.player.score >= self._WINNING_SCORE and self.opponent.score >= self._WINNING_SCORE:
+        # return early for efficiency
+        if all(player.score < self._WINNING_SCORE for player in (self.player, self.opponent)):
+            return self.GAME_ON
+
+        elif self._is_tied():
             result = self.TIE
+
+        # outscore: if both players are standing, the player with the highest score <= 20 wins
+        elif self.player.is_standing and self.opponent.is_standing:
+            winning_player = max([self.player, self.opponent], key=lambda p: (p.score <= self._WINNING_SCORE, p.score))
+            result = self.PLAYER_WINS if winning_player is self.player else self.OPPONENT_WINS
+
+        # filling the table: placing 9 cards without busting is an automatic win
+        elif self._filled_table(self.player):
+            result = self.PLAYER_WINS
+
+        elif self._filled_table(self.opponent):
+            result = self.OPPONENT_WINS
+
         else:
-            result = None
-        # if self.player.score <= self._WINNING_SCORE and \
-        #         (self.opponent.score > self._WINNING_SCORE or (self.opponent.score < self._WINNING_SCORE and self.opponent.is_standing)):
-        #     result = self.PLAYER_WINS
-        #
-        # elif self.opponent.score <= self._WINNING_SCORE and \
-        #         (self.player.score > self._WINNING_SCORE or (self.player.score < self._WINNING_SCORE and self.player.is_standing)):
-        #     result = self.OPPONENT_WINS
-        #
-        # elif self.player.score >= self._WINNING_SCORE and self.opponent.score >= self._WINNING_SCORE:
-        #     result = self.TIE
-        #
-        # else:
-        #     result = None
+            result = self.GAME_ON
 
         return result
 
@@ -97,7 +129,7 @@ class PazaakGame:
             return None
 
         response = input('[e]nd turn, [s]tand, or use a card from your hand [1-{0}]: '.format(len(self.player.hand)))
-        response = response.upper()
+        response = response.strip().upper()
         move = None
 
         if response.isnumeric():
@@ -108,8 +140,10 @@ class PazaakGame:
             else:
                 print('Invalid number, choose again')
                 return self._get_player_move()
+
         elif response == 'S':
             self.player.is_standing = True
+
         else:
             move = cards.random_card(positive_only=True, bound=self._max_modifier)
 
@@ -120,28 +154,48 @@ class PazaakGame:
         if self.opponent.is_standing:
             return None
 
+        if self.opponent.score == self._WINNING_SCORE or \
+           (self.player.is_standing and self.player.score < self.opponent.score <= self._WINNING_SCORE):
+            self.opponent.is_standing = True
+            return None
+
+        needed = PazaakCard(self._WINNING_SCORE - self.opponent.score)
+        if needed in self.opponent.hand:
+            self.opponent.hand.remove(needed)
+            return needed
+
         return cards.random_card(positive_only=True, bound=self._max_modifier)
 
 
-    def make_move(self, player: PazaakPlayer, move: PazaakCard) -> None:
+    def end_turn(self, player: PazaakPlayer, move: PazaakCard) -> None:
         if not player.is_standing:
             assert move is not None, 'expected PazaakCard; received `None`'
             player.placed.append(move)
             player.score += move.modifier
+            self._turn = self._other_turn(self.turn)
+
+            # ending a turn with a score over 20 is an automatic loss
+            if player.score > self._WINNING_SCORE:
+                raise GameOverError(self.turn)
+
+            status = self.winner()
+            if status != self.GAME_ON:
+                raise GameOverError(status)
 
 
-    def _print_game_status(self) -> None:
-        print('You: {0}'.format(self._player.score))
-        print('-' * 10)
-        print(', '.join([card.parity() for card in self._player.placed]))
-        print('-' * 10)
-        print('| {0} |'.format(' | '.join([card.parity() for card in self._player.hand])))
-        print('-' * 10)
-        print()
-        print('Opponent: {0}'.format(self._opponent.score))
-        print('-' * 10)
-        print(', '.join([card.parity() for card in self._opponent.placed]))
-        print('-' * 10)
+    def _print_player_game(self, player: PazaakPlayer, show_hand=True) -> None:
+        hand_repr = '| {0} |'.format(' | '.join([card.parity() if show_hand else 'X' for card in player.hand]))
+        divider_size = len(hand_repr)
+        pronoun = 'You' if player is self.player else 'Opponent'
+        print('{0}: {1}'.format(pronoun, player.score))
+
+        if not player.is_standing:
+            print('-' * divider_size)
+            print(', '.join([card.parity() for card in player.placed]))
+            print('-' * divider_size)
+            print(hand_repr)
+            print('-' * divider_size)
+
         print()
 
     def _draw_hand(self, pool: [PazaakCard]) -> [PazaakCard]:
@@ -153,24 +207,36 @@ class PazaakGame:
         """
         return random.sample(pool, self._hand_size)
 
+    @classmethod
+    def _filled_table(cls, player: PazaakPlayer) -> bool:
+        return len(player.placed) >= 9 and player.score <= cls._WINNING_SCORE
+
+
+    def _is_tied(self) -> bool:
+        return (self.player.score == self._WINNING_SCORE and self.player.score == self.opponent.score) or \
+               (self.player.score > self._WINNING_SCORE and self.opponent.score > self._WINNING_SCORE)
+
+
     def json(self) -> dict:
         return {
-            'player': {
+            Turn.PLAYER: {
                 'score': self.player.score,
                 'hand': [card.parity() for card in self.player.hand],
                 'last_placed': self.player.placed[-1].parity() if self.player.placed else 0,
-                'size': len(self.player.placed)
+                'size': len(self.player.placed),
+                'is_standing': self.player.is_standing
             },
-            'opponent': {
+            Turn.OPPONENT: {
                 'score': self.opponent.score,
                 'hand': [card.parity() for card in self.opponent.hand],
                 'last_placed': self.opponent.placed[-1].parity() if self.opponent.placed else 0,
-                'size': len(self.opponent.placed)
+                'size': len(self.opponent.placed),
+                'is_standing': self.opponent.is_standing
             }
         }
 
 
 if __name__ == '__main__':
-    pool = cards.random_cards(10, positive_only=False)
+    pool = cards.random_cards(10, positive_only=False, bound=5)
     game = PazaakGame(pool)
     game.start()
