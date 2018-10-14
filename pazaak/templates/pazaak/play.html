@@ -81,7 +81,21 @@
     <script type="text/javascript">
 
         $(document).ready(() => {
-            setUpGame();
+            bindActionButton("#btn-end-turn", "POST", _onClickActionButton, "end-turn-player", (response) => onEndTurn(response, PLAYER));
+            bindActionButton("#btn-stand", "POST", _onClickActionButton, "stand-player", (response) => onEndTurn(response, PLAYER));
+            bindActionButton("#btn-restart", "GET", undefined, "restart", _onClickRestartButton);
+            bindHand();
+
+            const initialPlayerMove = "{{ move }}";
+            const pseudoResponse = {
+                "move": initialPlayerMove,
+                "size": 1,
+                "score": initialPlayerMove
+            };
+
+            updateSideFor(PLAYER, pseudoResponse);
+            enableActionButtons(true);
+            switchTurnIconTo(PLAYER, false);
         });
 
     </script>

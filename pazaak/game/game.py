@@ -167,7 +167,7 @@ class PazaakGame:
         return cards.random_card(positive_only=True, bound=self._max_modifier)
 
 
-    def end_turn(self, player: PazaakPlayer, move: PazaakCard) -> None:
+    def end_turn(self, player: PazaakPlayer, move: PazaakCard, _check_game_over=True) -> None:
         if not player.is_standing:
             assert move is not None, 'expected PazaakCard; received `None`'
             player.placed.append(move)
@@ -175,12 +175,8 @@ class PazaakGame:
             self._turn = self._other_turn(self.turn)
 
             # ending a turn with a score over 20 is an automatic loss
-            if player.score > self._WINNING_SCORE:
-                raise GameOverError(self.turn)
-
-            status = self.winner()
-            if status != self.GAME_ON:
-                raise GameOverError(status)
+            if _check_game_over and player.score > self._WINNING_SCORE or self.winner() != self.GAME_ON:
+                raise GameOverError(self.turn.value)
 
 
     def _print_player_game(self, player: PazaakPlayer, show_hand=True) -> None:
@@ -222,14 +218,14 @@ class PazaakGame:
             Turn.PLAYER: {
                 'score': self.player.score,
                 'hand': [card.parity() for card in self.player.hand],
-                'last_placed': self.player.placed[-1].parity() if self.player.placed else 0,
+                # 'last_placed': self.player.placed[-1].parity() if self.player.placed else 0,
                 'size': len(self.player.placed),
                 'is_standing': self.player.is_standing
             },
             Turn.OPPONENT: {
                 'score': self.opponent.score,
                 'hand': [card.parity() for card in self.opponent.hand],
-                'last_placed': self.opponent.placed[-1].parity() if self.opponent.placed else 0,
+                # 'last_placed': self.opponent.placed[-1].parity() if self.opponent.placed else 0,
                 'size': len(self.opponent.placed),
                 'is_standing': self.opponent.is_standing
             }

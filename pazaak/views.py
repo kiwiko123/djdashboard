@@ -4,10 +4,11 @@ from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 
+import collections
 import re
 
 from .game import cards
-from .game.game import PazaakGame, Turn
+from .game.game import PazaakGame, Turn, GameOverError
 
 
 def _init_game() -> PazaakGame:
@@ -38,6 +39,12 @@ class PlayView(generic.TemplateView):
     def _get_game(cls) -> PazaakGame:
         return cls._game
 
+    @classmethod
+    def _move(cls, **fields):
+        field_decl = ['status', 'turn', 'is_standing', 'move', 'winner']
+        MoveInfo = collections.namedtuple('MoveInfo', field_decl)
+        return MoveInfo(**fields)
+
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
@@ -52,7 +59,7 @@ class PlayView(generic.TemplateView):
 
         context = {'player': self._get_game().player,
                    'opponent': self._get_game().opponent,
-                   'player_move': move.modifier,
+                   'move': move.modifier,
                    'status': 'start'}
         return render(request, self.template_name, context=context)
 
@@ -69,10 +76,12 @@ class PlayView(generic.TemplateView):
             return self.get(request)
 
 
-
     def _process_post(self, post_data: dict) -> dict:
-        if self._get_game().game_over():
-            return self._process_game_over()
+        if post_data['winner']:
+            return {
+                'status': 'game-over',
+                'winner': post_data['winner']
+            }
 
         context = self._process_player_move(post_data)
         turn = context['turn']
@@ -82,6 +91,7 @@ class PlayView(generic.TemplateView):
         turn = switch[turn]
         assert turn in content, 'expected turn to be one of ("player", "opponent")'
         context.update(content[turn])
+
         return context
 
 
@@ -92,42 +102,65 @@ class PlayView(generic.TemplateView):
         action = post_data['action']
         action = action.strip().lower()
         context = {}
-        status = ''
-        turn = None
 
         # player ends turn - the opponent makes a move now
         if action == 'end-turn-player':
-            status = 'play'
-            turn = Turn.OPPONENT
-            move = cards.random_card(positive_only=True, bound=self._get_game().max_modifier)
-            self._get_game().end_turn(self._get_game().opponent, move)
+            payload = self._next_move(Turn.OPPONENT)
+            context = payload._asdict()
 
         # opponent ends turn - the player makes a move now
         elif action == 'end-turn-opponent':
-            status = 'play'
-            turn = Turn.PLAYER
-            move = cards.random_card(positive_only=True, bound=self._get_game().max_modifier)
-            self._get_game().end_turn(self._get_game().player, move)
+            payload = self._next_move(Turn.PLAYER)
+            context = payload._asdict()
 
         elif action == 'hand-player':
-            status = 'play'
-            id_of_clicked_card = post_data['card']
+            pass
+            # status = 'play'
+            # id_of_clicked_card = post_data['card']
 
         elif action == 'stand-player':
-            self._get_game().player.stand()
-            status = 'stand-player'
+            self._get_game().player.is_standing = True
+            payload = self._next_move(Turn.PLAYER, make_move=False)
+            context = payload._asdict()
+            # self._get_game().player.stand()
+            # status = 'stand-player'
 
         else:
-            pass
+            context['error'] = 'Invalid response'
 
-        context['status'] = status
-        context['turn'] = turn.value
         return context
+
+
+    def _next_move(self, turn: Turn, make_move=True) -> 'MoveInfo':
+        player_switch = {
+            Turn.PLAYER: self._get_game().player,
+            Turn.OPPONENT: self._get_game().opponent
+        }
+
+        player = player_switch[turn]
+        move = cards.random_card(positive_only=True, bound=self._get_game().max_modifier)
+
+        context = {
+            'status': 'play',
+            'is_standing': player.is_standing,
+            'turn': turn.value,
+            'move': move.modifier,
+            'winner': None
+        }
+
+        if make_move:
+            try:
+                self._get_game().end_turn(player, move)
+            except GameOverError as e:
+                context['winner'] = str(e)
+
+        return self._move(**context)
 
 
     def _process_game_over(self) -> dict:
         winner_code = self._get_game().winner()
         assert winner_code != self._get_game().GAME_ON, 'game is not over'
+
         switch = {
             self._get_game().PLAYER_WINS: 'player',
             self._get_game().OPPONENT_WINS: 'opponent',

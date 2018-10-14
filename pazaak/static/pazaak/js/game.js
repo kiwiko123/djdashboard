@@ -2,17 +2,18 @@
 // REGION Game Logic
 // ==================================================================
 
-g_PLAYER = "player";
-g_OPPONENT = "opponent";
+PLAYER = "player";
+OPPONENT = "opponent";
+_WINNER = "";
 
 function _oppositePlayer(player) {
     let result;
     switch (player) {
-        case g_PLAYER:
-            result = g_OPPONENT;
+        case PLAYER:
+            result = OPPONENT;
             break;
-        case g_OPPONENT:
-            result = g_PLAYER;
+        case OPPONENT:
+            result = PLAYER;
             break;
         default:
             result = undefined;
@@ -20,8 +21,8 @@ function _oppositePlayer(player) {
     return result;
 }
 
-function isGameOver(status) {
-    return status === "game_over";
+function signalGameOver(player) {
+    _WINNER = player;
 }
 
 // ==================================================================
@@ -59,10 +60,7 @@ async function _flashTurnIcon(turn) {
     const repititions = 5;
 
     for (let i = 0; i < repititions; ++i) {
-        await sleep(delayMs).then(() => {
-            $(turnIconId).toggleClass("fas");
-            $(turnIconId).toggleClass("far");
-        });
+        await sleep(delayMs).then(() => $(turnIconId).toggleClass("fas far"));
     }
 
     $(turnIconId).removeClass("far");
@@ -72,16 +70,16 @@ async function _flashTurnIcon(turn) {
 /**
  * Updates the turn icon ("PLAY" or "X") to the player specified by `turn`.
  *
- * @param turn one of {`g_PLAYER`, `g_OPPONENT`}.
+ * @param turn one of {`PLAYER`, `OPPONENT`}.
  * @param withFlash boolean which will momentarily flash the turn icon if true; immediate switch if false.
  */
-function _switchTurnIconTo(turn, withFlash = true) {
+async function switchTurnIconTo(turn, withFlash = true) {
     switch (turn) {
-        case g_PLAYER:
-            _switchTurnGeneric(g_PLAYER, g_OPPONENT);
+        case PLAYER:
+            _switchTurnGeneric(PLAYER, OPPONENT);
             break;
-        case g_OPPONENT:
-            _switchTurnGeneric(g_OPPONENT, g_PLAYER);
+        case OPPONENT:
+            _switchTurnGeneric(OPPONENT, PLAYER);
             break;
         default:
             console.error(`_switchTurnIconTo received invalid turn "${turn}"`);
@@ -89,8 +87,13 @@ function _switchTurnIconTo(turn, withFlash = true) {
     }
 
     if (withFlash) {
-        _flashTurnIcon(turn);
+        await _flashTurnIcon(turn);
     }
+}
+
+function removeAllClassesFrom(elementId) {
+    const classNames = $(elementId).attr("class").split(/\s+/);
+    classNames.forEach((cls) => $(elementId).removeClass(cls));
 }
 
 /**
@@ -110,7 +113,7 @@ function _updateScore(scoreId, cardScore) {
  *
  * @param playerOrOpponent a string of either "player" or "opponent", used to identify the appropriate HTML ID.
  * @param card a string of the card parity and value, taken directly from the JSON response.
- *          e.g., jsonResponse["player"]["last_placed"] -> "+4"
+ *          e.g., jsonResponse["player"]["move"] -> "+4"
  * @param placedLength an integer of the number of cards (including `card`) that have been placed.
  *          Also taken directly from the JSON response; e.g., jsonResponse["player"]["size"]
  */
@@ -122,16 +125,16 @@ function _addPlacedCard(playerOrOpponent, card, placedLength) {
 }
 
 /**
- * Finds the necessary game information (card placed, score) from `jsonResponse`.
+ * Finds the necessary game information (card placed, score) from `response`.
  * Adds the newly placed card and updates the score for `playerOrOpponent`.
  *
- * @param playerOrOpponent one of {`g_PLAYER`, `g_OPPONENT`}.
- * @param jsonResponse the response received from the server
+ * @param playerOrOpponent one of {`PLAYER`, `OPPONENT`}.
+ * @param response the JSON response received from the server
  */
-function updateSideFor(playerOrOpponent, jsonResponse) {
-    const cardPlaced = jsonResponse["last_placed"];
-    const placedLength = jsonResponse["size"];
-    const cardScore = jsonResponse["score"];
+function updateSideFor(playerOrOpponent, response) {
+    const cardPlaced = response.move;
+    const placedLength = response.size;
+    const cardScore = response.score;
 
     _updateScore(`#score-${playerOrOpponent}`, cardScore);
     _addPlacedCard(playerOrOpponent, cardPlaced, placedLength);
@@ -139,16 +142,37 @@ function updateSideFor(playerOrOpponent, jsonResponse) {
 
 function gameOver(winner) {
     enableActionButtons(false);
+
     let message;
+    let tie = false;
     switch (winner) {
-        case "player":
+        case PLAYER:
             message = "Player wins!";
             break;
-        case "opponent":
+        case OPPONENT:
             message = "Opponent wins!";
             break;
         default:
             message = "It's a tie!";
+            tie = true;
+    }
+
+    if (tie) {
+        [PLAYER, OPPONENT].forEach((turn) => {
+            const turnIconId = `#icon-turn-${turn}`;
+            removeAllClassesFrom(turnIconId);
+            $(turnIconId).addClass("fas fa-handshake fa-3x");
+        });
+    } else {
+        const loser = _oppositePlayer(winner);
+        const winnerIconId = `#icon-turn-${winner}`;
+        const loserIconId = `#icon-turn-${loser}`;
+
+        removeAllClassesFrom(winnerIconId);
+        removeAllClassesFrom(loserIconId);
+
+        $(winnerIconId).addClass("fas fa-check fa-3x");
+        $(loserIconId).addClass("fas fa-times fa-3x");
     }
 
     $("#banner-winner-text").text(message);
@@ -173,9 +197,9 @@ function _onClickRestartButton() {
  * Disables the "End Turn" and "Stand" buttons.
  * Updates the turn icon to the opponent side.
  */
-function _onClickEndTurnButton() {
+function _onClickActionButton() {
     enableActionButtons(false);
-    _switchTurnIconTo(g_OPPONENT);
+    switchTurnIconTo(OPPONENT);
 }
 
 /**
@@ -206,9 +230,10 @@ function bindActionButton(buttonID, requestType, preceder, action, success) {
             type: requestType,
             data: {
                 "action": action,
-                turn: g_PLAYER
+                turn: PLAYER,
+                winner: _WINNER
             },
-            "success": success
+            "success": (response) => _successWrapper(response, success)
         });
     });
 }
@@ -246,59 +271,62 @@ function getMove(playerOrOpponent, success) {
         type: "POST",
         data: {
             action: `end-turn-${playerOrOpponent}`,
-            turn: playerOrOpponent
+            turn: playerOrOpponent,
+            winner: _WINNER
         },
-        "success": success
+        "success": (response) => _successWrapper(response, success)
     });
 }
 
-//TODO handle standing and winning
-function _endTurnHandler(jsonResponse) {
-    const playerToUpdate = jsonResponse["turn"];
-    const playerJustWent = playerToUpdate === g_PLAYER;
-    const otherPlayer = _oppositePlayer(playerToUpdate);
-    const isStanding = jsonResponse["is_standing"];
+function _successWrapper(response, proceder) {
+    if (response.error) {
+        console.error(`error: "${response.error}"`);
+        //TODO render error
+    } else {
+        proceder(response);
+    }
+}
 
-    updateSideFor(playerToUpdate, jsonResponse);
+//TODO handle standing
+function _endTurnHandler(response) {
+    const winner = response.winner;
+    const status = response.status;
+    if (status === "game-over") {
+        gameOver(winner);
+        return;
+    }
+
+    let playerToUpdate = response.turn;
+    let otherPlayer = _oppositePlayer(playerToUpdate);
+    let playerJustWent = playerToUpdate === PLAYER;   // player meaning the user
+    const isStanding = response.is_standing;
+
+    if (isStanding) {
+        //TODO 
+    } else {
+        updateSideFor(playerToUpdate, response);
+    }
+
+    if (winner) {
+        signalGameOver(winner);
+    }
 
     // if it's the opponent's turn, get their next move.
     // otherwise, it's the player's turn, so wait for user input
     if (!playerJustWent) {
-        _switchTurnIconTo(otherPlayer);         // which is g_PLAYER in this conditional
-        enableActionButtons(!playerJustWent);   // which is true in this conditional
+        // in this conditional:
+        //   * otherPlayer is always PLAYER
+        //   * playerJustWent is always false
+
+        switchTurnIconTo(otherPlayer);
         getMove(playerToUpdate, (response) => onEndTurn(response, otherPlayer));
     }
+
+    enableActionButtons(!isStanding && playerJustWent);
 }
 
 function onEndTurn(response, whoEndedTurn) {
     setTimeout(() => _endTurnHandler(response, whoEndedTurn), 1 * 1000);
-}
-
-// ==================================================================
-// ENDREGION
-// ==================================================================
-
-
-// ==================================================================
-// REGION Main
-// ==================================================================
-
-function setUpGame() {
-    bindActionButton("#btn-end-turn", "POST", _onClickEndTurnButton, "end-turn-player", (response) => onEndTurn(response, g_PLAYER));
-    //TODO bindActionButton("#btn-stand", "POST", undefined, "stand-player", () => {});
-    bindActionButton("#btn-restart", "GET", undefined, "restart", _onClickRestartButton);
-    bindHand();
-
-    const initialPlayerMove = "{{ player_move }}";
-    const pseudoResponse = {
-        "last_placed": initialPlayerMove,
-        "size": 1,
-        "score": initialPlayerMove
-    };
-
-    updateSideFor(g_PLAYER, pseudoResponse);
-    enableActionButtons(true);
-    _switchTurnIconTo(g_PLAYER, false);
 }
 
 // ==================================================================
