@@ -8,6 +8,7 @@ import collections
 import re
 
 from .game import cards
+from .game.cards import PazaakCard
 from .game.game import PazaakGame, Turn, GameOverError
 
 
@@ -55,7 +56,7 @@ class PlayView(generic.TemplateView):
         PlayView._game = _init_game()
 
         move = cards.random_card(positive_only=True, bound=self._get_game().max_modifier)
-        self._get_game().end_turn(self._get_game().player, move)
+        self._get_game().end_turn(Turn.PLAYER, move)
 
         context = {'player': self._get_game().player,
                    'opponent': self._get_game().opponent,
@@ -77,7 +78,7 @@ class PlayView(generic.TemplateView):
 
 
     def _process_post(self, post_data: dict) -> dict:
-        if post_data['winner']:
+        if 'winner' in post_data and post_data['winner']:
             return {
                 'status': 'game-over',
                 'winner': post_data['winner']
@@ -114,16 +115,17 @@ class PlayView(generic.TemplateView):
             context = payload._asdict()
 
         elif action == 'hand-player':
-            pass
-            # status = 'play'
-            # id_of_clicked_card = post_data['card']
+            card_index = post_data['card_index']
+            assert card_index.isdigit(), 'expected numeric card index'
+            card_index = int(card_index)
+            move = self._get_game().player.hand.pop(card_index)
+            payload = self._next_move(Turn.PLAYER, move=move)
+            context = payload._asdict()
 
         elif action == 'stand-player':
             self._get_game().player.is_standing = True
             payload = self._next_move(Turn.PLAYER, make_move=False)
             context = payload._asdict()
-            # self._get_game().player.stand()
-            # status = 'stand-player'
 
         else:
             context['error'] = 'Invalid response'
@@ -131,14 +133,18 @@ class PlayView(generic.TemplateView):
         return context
 
 
-    def _next_move(self, turn: Turn, make_move=True) -> 'MoveInfo':
-        player_switch = {
-            Turn.PLAYER: self._get_game().player,
-            Turn.OPPONENT: self._get_game().opponent
-        }
+    def _next_move(self, turn: Turn, move=None) -> 'MoveInfo':
+        player = None
 
-        player = player_switch[turn]
-        move = cards.random_card(positive_only=True, bound=self._get_game().max_modifier)
+        if turn == Turn.PLAYER:
+            player = self._get_game().player
+            if self._get_game().player.is_standing:
+                move = PazaakCard.empty()
+            elif move is None:
+                move = cards.random_card(positive_only=True, bound=self._get_game().max_modifier)
+        else:
+            player = self._get_game().opponent
+            move = self._get_game()._get_opponent_move()
 
         context = {
             'status': 'play',
@@ -148,9 +154,9 @@ class PlayView(generic.TemplateView):
             'winner': None
         }
 
-        if make_move:
+        if move is not None:
             try:
-                self._get_game().end_turn(player, move)
+                self._get_game().end_turn(turn, move)
             except GameOverError as e:
                 context['winner'] = str(e)
 

@@ -26,7 +26,7 @@
 
                 <h2>You</h2>
                 <h2 id="score-player">
-                    {{ player.score }}
+                    <span></span>
                 </h2>
             </div>
             <div class="column column-right-border">
@@ -36,7 +36,7 @@
 
                 <h2>Opponent</h2>
                 <h2 id="score-opponent">
-                    {{ opponent.score }}
+                    <span></span>
                 </h2>
             </div>
         </div>
@@ -63,6 +63,7 @@
             <div id="hand-opponent" class="column column-right-border">
                 {% for card in opponent.hand %}
                     <div id="card-opponent-hand-{{ forloop.counter }}" class="horizontal-row pazaak-card">
+                        <p>{{ card.parity }}</p>    <!--REMOVE THIS-->
                     </div>
                 {% endfor %}
             </div>
@@ -84,7 +85,7 @@
             bindActionButton("#btn-end-turn", "POST", _onClickActionButton, "end-turn-player", (response) => onEndTurn(response, PLAYER));
             bindActionButton("#btn-stand", "POST", _onClickActionButton, "stand-player", (response) => onEndTurn(response, PLAYER));
             bindActionButton("#btn-restart", "GET", undefined, "restart", _onClickRestartButton);
-            bindHand();
+            bindHand(_onClickActionButton, (response) => onEndTurn(response, PLAYER));
 
             const initialPlayerMove = "{{ move }}";
             const pseudoResponse = {

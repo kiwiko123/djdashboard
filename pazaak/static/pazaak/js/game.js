@@ -101,10 +101,15 @@ function removeAllClassesFrom(elementId) {
  *
  * @param scoreId the string of the score ID to update.
  *          e.g., "#score-player"
- * @param cardScore int or string; the score/value of the just-placed card.
+ * @param cardValue int or string; the score/value of the just-placed card.
  */
-function _updateScore(scoreId, cardScore) {
-    $(scoreId).text(cardScore);
+function _updateScore(scoreId, cardValue) {
+    scoreId = `${scoreId} span`;
+    let score = $(scoreId).text().trim();
+    if (score) {
+        score = Number(score);
+    }
+    $(scoreId).text(score + cardValue);
 }
 
 /**
@@ -134,10 +139,11 @@ function _addPlacedCard(playerOrOpponent, card, placedLength) {
 function updateSideFor(playerOrOpponent, response) {
     const cardPlaced = response.move;
     const placedLength = response.size;
-    const cardScore = response.score;
 
-    _updateScore(`#score-${playerOrOpponent}`, cardScore);
-    _addPlacedCard(playerOrOpponent, cardPlaced, placedLength);
+    if (cardPlaced) {
+        _updateScore(`#score-${playerOrOpponent}`, cardPlaced);
+        _addPlacedCard(playerOrOpponent, cardPlaced, placedLength);
+    }
 }
 
 function gameOver(winner) {
@@ -171,7 +177,7 @@ function gameOver(winner) {
         removeAllClassesFrom(winnerIconId);
         removeAllClassesFrom(loserIconId);
 
-        $(winnerIconId).addClass("fas fa-check fa-3x");
+        $(winnerIconId).addClass("fas fa-trophy fa-3x");
         $(loserIconId).addClass("fas fa-times fa-3x");
     }
 
@@ -238,22 +244,26 @@ function bindActionButton(buttonID, requestType, preceder, action, success) {
     });
 }
 
-function bindHand() {
+function bindHand(preceder, success) {
     $("#hand-player > .pazaak-card").each((index, element) => {
-        _bindCardInHand(element.id)
+        _bindCardInHand(element.id, index, preceder, success)
     });
 }
 
-function _bindCardInHand(cardId) {
+function _bindCardInHand(cardId, cardIndex, preceder, success) {
     $(`#${cardId}`).click((e) => {
+        if (preceder) {
+            preceder();
+        }
+
         $.ajax({
             type: "POST",
             data: {
                 action: "hand-player",
-                turn: "player",
-                card: cardId
+                turn: PLAYER,
+                card_index: cardIndex
             },
-            success: () => {}
+            success: (response) => _successWrapper(response, success)
         });
     });
 }
@@ -291,6 +301,7 @@ function _successWrapper(response, proceder) {
 function _endTurnHandler(response) {
     const winner = response.winner;
     const status = response.status;
+
     if (status === "game-over") {
         gameOver(winner);
         return;
@@ -301,11 +312,13 @@ function _endTurnHandler(response) {
     let playerJustWent = playerToUpdate === PLAYER;   // player meaning the user
     const isStanding = response.is_standing;
 
-    if (isStanding) {
-        //TODO 
-    } else {
-        updateSideFor(playerToUpdate, response);
+    // response.move is 0 when the player is standing (PazaakCard.empty())
+    if (isStanding && !response.move) {
+        // hacky way to not update the player's side if they're standing
+        response.move = null;
     }
+
+    updateSideFor(playerToUpdate, response);
 
     if (winner) {
         signalGameOver(winner);
@@ -313,7 +326,7 @@ function _endTurnHandler(response) {
 
     // if it's the opponent's turn, get their next move.
     // otherwise, it's the player's turn, so wait for user input
-    if (!playerJustWent) {
+    if (isStanding || !playerJustWent) {
         // in this conditional:
         //   * otherPlayer is always PLAYER
         //   * playerJustWent is always false

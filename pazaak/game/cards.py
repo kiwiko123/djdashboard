@@ -2,6 +2,11 @@ import random
 
 
 class PazaakCard:
+
+    @classmethod
+    def empty(cls) -> 'PazaakCard':
+        return cls(0)
+
     def __init__(self, modifier: int):
         """
         Initialize a new Pazaak card.
@@ -14,6 +19,9 @@ class PazaakCard:
 
     def __str__(self) -> str:
         return repr(self)
+
+    def __bool__(self) -> bool:
+        return bool(self.modifier)
 
     def __hash__(self) -> int:
         return hash(str(self))

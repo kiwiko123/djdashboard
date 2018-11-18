@@ -22,9 +22,9 @@ class GameOverError(Exception):
 
 class PazaakGame:
     GAME_ON = 0
-    PLAYER_WINS = 1
-    OPPONENT_WINS = 2
-    TIE = 3
+    PLAYER_WINS = Turn.PLAYER.value
+    OPPONENT_WINS = Turn.OPPONENT.value
+    TIE = 'tie'
     _WINNING_SCORE = 20
 
     _turn_switch = {
@@ -37,7 +37,7 @@ class PazaakGame:
         self._hand_size = hand_size
         self._max_modifier = max_modifier
 
-        opponent_cards = cards.random_cards(self._hand_size, positive_only=False, bound=self._max_modifier)
+        opponent_cards = cards.random_cards(self._hand_size, positive_only=True, bound=self._max_modifier)
         opponent_hand = self._draw_hand(opponent_cards)
         player_hand = self._draw_hand(self._initial_pool)
 
@@ -77,11 +77,11 @@ class PazaakGame:
         while not self.game_over():
             try:
                 player_move = self._get_player_move()
-                self.end_turn(self.player, player_move)
+                self.end_turn(Turn.PLAYER, player_move)
                 self._print_player_game(self.player)
 
                 opponent_move = self._get_opponent_move()
-                self.end_turn(self.opponent, opponent_move)
+                self.end_turn(Turn.OPPONENT, opponent_move)
                 self._print_player_game(self.opponent, show_hand=True)
                 time.sleep(0.5)
 
@@ -94,13 +94,17 @@ class PazaakGame:
         print('Winner: {0}!'.format(winner))
 
 
-    def game_over(self) -> bool:
-        return self.winner() != self.GAME_ON
+    def _game_over(self, player: PazaakPlayer) -> bool:
+        conditions = (
+            player.score > self._WINNING_SCORE,
+            self.winner() != self.GAME_ON,
+        )
+        return any(conditions)
 
 
     def winner(self) -> int:
         # return early for efficiency
-        if all(player.score < self._WINNING_SCORE for player in (self.player, self.opponent)):
+        if all(not player.is_standing and player.score < self._WINNING_SCORE for player in (self.player, self.opponent)):
             return self.GAME_ON
 
         elif self._is_tied():
@@ -152,12 +156,12 @@ class PazaakGame:
 
     def _get_opponent_move(self) -> PazaakCard:
         if self.opponent.is_standing:
-            return None
+            return PazaakCard.empty()
 
         if self.opponent.score == self._WINNING_SCORE or \
            (self.player.is_standing and self.player.score < self.opponent.score <= self._WINNING_SCORE):
             self.opponent.is_standing = True
-            return None
+            return PazaakCard.empty()
 
         needed = PazaakCard(self._WINNING_SCORE - self.opponent.score)
         if needed in self.opponent.hand:
@@ -167,16 +171,32 @@ class PazaakGame:
         return cards.random_card(positive_only=True, bound=self._max_modifier)
 
 
-    def end_turn(self, player: PazaakPlayer, move: PazaakCard, _check_game_over=True) -> None:
-        if not player.is_standing:
+    def end_turn(self, turn: Turn, move: PazaakCard) -> None:
+        switch = {
+            Turn.PLAYER: self.player,
+            Turn.OPPONENT: self.opponent
+        }
+        player = switch[turn]
+
+        if player.is_standing:
+            winner = self.winner()
+            if winner != self.GAME_ON:
+                raise GameOverError(winner)
+
+        else:
             assert move is not None, 'expected PazaakCard; received `None`'
             player.placed.append(move)
             player.score += move.modifier
             self._turn = self._other_turn(self.turn)
 
+            if player.score == self._WINNING_SCORE:
+                player.is_standing = True
+
             # ending a turn with a score over 20 is an automatic loss
-            if _check_game_over and player.score > self._WINNING_SCORE or self.winner() != self.GAME_ON:
-                raise GameOverError(self.turn.value)
+            ended_turn_over_twenty = player.score > self._WINNING_SCORE
+            winner = self.winner()
+            if ended_turn_over_twenty or winner != self.GAME_ON:
+                raise GameOverError(self._turn.value if ended_turn_over_twenty else winner)
 
 
     def _print_player_game(self, player: PazaakPlayer, show_hand=True) -> None:
