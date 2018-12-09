@@ -5,6 +5,7 @@ from pazaak.game import cards
 from pazaak.game.cards import PazaakCard
 from pazaak.game.players import PazaakPlayer
 from pazaak.game.data_structures.hash_tables import MultiSet
+from pazaak.boiler.bases import Serializable
 
 
 _HAND_SIZE = 4
@@ -20,7 +21,7 @@ class GameOverError(Exception):
     pass
 
 
-class PazaakGame:
+class PazaakGame(Serializable):
     GAME_ON = 0
     PLAYER_WINS = Turn.PLAYER.value
     OPPONENT_WINS = Turn.OPPONENT.value

@@ -3,6 +3,6 @@ from . import views
 
 app_name = 'pazaak'
 urlpatterns = [
-        url(r'^$', views.IndexView.as_view(), name='index'),
-        url(r'^play/$', views.PlayView.as_view(), name='play')
+        url(r'^api/new-game/$', views.NewGameView.as_view(), name='new-game'),
+        url(r'^api/end-turn/$', views.EndTurnView.as_view(), name='end-turn'),
     ]

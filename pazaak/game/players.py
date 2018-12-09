@@ -1,7 +1,8 @@
 from pazaak.game.cards import PazaakCard
+from pazaak.boiler.bases import Serializable
 
 
-class PazaakPlayer:
+class PazaakPlayer(Serializable):
     def __init__(self, hand: [PazaakCard], identifier: str, __container_type=list):
         self._hand = hand if __container_type is list else __container_type(hand)
         self._score = 0
@@ -35,6 +36,15 @@ class PazaakPlayer:
     @property
     def identifier(self) -> str:
         return self._identifier
+
+    def json(self) -> dict:
+        return {
+            'hand': [card.parity() for card in self.hand],
+            'placed': [card.parity() for card in self.placed],
+            'score': self.score,
+            'is_standing': self.is_standing,
+            'identifier': self.identifier
+        }
 
 
 if __name__ == '__main__':

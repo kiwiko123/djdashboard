@@ -1,0 +1,12 @@
+.pazaak-card {
+    color: white;
+    width: 75px;
+    height: 100px;
+    margin-right: 2%;
+    margin-bottom: 2%;
+    background: black;
+}
+
+.hand-card {
+    cursor: pointer;
+}
