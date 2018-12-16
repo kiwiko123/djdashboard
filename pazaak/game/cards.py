@@ -1,7 +1,9 @@
 import random
 
+from pazaak.boiler.bases import Serializable
 
-class PazaakCard:
+
+class PazaakCard(Serializable):
 
     @classmethod
     def empty(cls) -> 'PazaakCard':
@@ -37,6 +39,12 @@ class PazaakCard:
         p = '+' if self.modifier > 0 else ''
 
         return '{0}{1}'.format(p, self.modifier)
+
+    def json(self) -> dict:
+        return {
+            'modifier': self.modifier,
+            'parity': self.parity()
+        }
 
 
 def random_card(positive_only=True, bound=10) -> PazaakCard:

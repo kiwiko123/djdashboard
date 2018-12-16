@@ -7,8 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .game import cards
 from .api.game import PazaakGameAPI
-from .boiler.bases import serialize
-from .boiler.utilities import allow_cors
+from .boiler.utilities import allow_cors, serialize
 
 
 class NewGameView(generic.TemplateView, PazaakGameAPI):
@@ -30,7 +29,7 @@ class NewGameView(generic.TemplateView, PazaakGameAPI):
         context = serialize(
             player=self.game().player,
             opponent=self.game().opponent,
-            move=move.modifier,
+            move=move,
             status='start'
         )
 
@@ -54,6 +53,6 @@ class EndTurnView(generic.TemplateView, PazaakGameAPI):
         print('POST - EndTurnView')
         print(payload)
 
-        context = self._process_post(payload)
+        context = self.process_post(payload)
         print('Context:', context)
         return JsonResponse(context)

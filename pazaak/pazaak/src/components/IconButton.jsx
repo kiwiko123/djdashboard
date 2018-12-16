@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Button } from 'react-bootstrap';
 
-import './IconButton.css';
+import '../styles/IconButton.css';
 
 
 class IconButton extends React.PureComponent {
@@ -12,6 +12,7 @@ class IconButton extends React.PureComponent {
             <Button
                 className="IconButton"
                 bsStyle={this.props.bsStyle}
+                disabled={this.props.disabled}
                 onClick={this.props.onClick}>
                 <i className={this.props.faClassName}>
                     {label}
@@ -25,6 +26,7 @@ IconButton.propTypes = {
     label: PropTypes.string,
     bsStyle: PropTypes.string,
     faClassName: PropTypes.string,
+    disabled: PropTypes.bool,
     onClick: PropTypes.func,
 };
 export default IconButton;

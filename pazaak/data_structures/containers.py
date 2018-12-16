@@ -3,18 +3,21 @@ import abc
 
 class BaseContainer(metaclass=abc.ABCMeta):
 
+    @abc.abstractmethod
+    def __init__(self, iterable=None):
+        pass
+
     @property
     @abc.abstractmethod
     def _container(self):
         pass
 
     @abc.abstractmethod
-    def __len__(self) -> int:
-        pass
-
-    @abc.abstractmethod
     def __iter__(self):
         pass
+
+    def __len__(self) -> int:
+        return len(self._container)
 
     def __bool__(self) -> bool:
         return len(self) > 0

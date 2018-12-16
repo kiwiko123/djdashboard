@@ -1,9 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { classes } from './util';
+import { classes } from '../js/util';
 
-import './PazaakCard.css';
-import './common.css';
+import '../styles/common.css';
+import '../styles/PazaakCard.css';
 
 
 class PazaakCard extends React.PureComponent {

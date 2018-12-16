@@ -1,4 +1,5 @@
 from django.http import HttpRequest, HttpResponse
+from .bases import Serializable
 
 
 class allow_cors:
@@ -12,3 +13,20 @@ class allow_cors:
         response['Access-Control-Max-Age'] = 1000
         response['Access-Control-Allow-Headers'] = 'origin, x-csrftoken, content-type, accept'
         return response
+
+
+def serialize(**payload) -> dict:
+    """
+    Recursively serializes the keyword arguments into a payload that JsonResponse should be able to consume.
+    Any object in the kwargs derived from Serializable will use their `.json()` method.
+    Returns the serialized kwargs as a dictionary.
+    """
+    for field, value in payload.items():
+        if isinstance(value, list):
+            payload[field] = [serialize(item) for item in value]
+        if isinstance(value, dict):
+            payload[field] = serialize(**value)
+        elif isinstance(value, Serializable):
+            payload[field] = value.json()
+
+    return payload
