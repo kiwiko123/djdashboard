@@ -1,13 +1,13 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { classes } from './util';
+import { classes } from '../js/util';
 
 import 'font-awesome/css/font-awesome.min.css';
-import './Score.css';
-import './common.css';
+import '../styles/common.css';
+import '../styles/PlayerHeader.css';
 
 
-class Score extends PureComponent {
+class PlayerHeader extends PureComponent {
     render() {
         let divClassName, playerLabel;
         if (this.props.isPlayer) {
@@ -18,8 +18,8 @@ class Score extends PureComponent {
             playerLabel = 'Opponent';
         }
         const icon = this._getIcon();
-        const scoreLabel = `${playerLabel}: ${this.props.score}`;
-        divClassName = `Score column ${divClassName}`;
+        const scoreLabel = `${playerLabel}: ${this.props.text}`;
+        divClassName = `PlayerHeader column ${divClassName}`;
 
         // TODO flash turn icon on switch
         return (
@@ -45,9 +45,12 @@ class Score extends PureComponent {
     }
 }
 
-Score.propTypes = {
-    score: PropTypes.number,
+PlayerHeader.propTypes = {
+    text: PropTypes.oneOfType([
+        PropTypes.number,
+        PropTypes.string,
+    ]),
     isPlayer: PropTypes.bool,
     hasCurrentTurn: PropTypes.bool,
 };
-export default Score;
+export default PlayerHeader;

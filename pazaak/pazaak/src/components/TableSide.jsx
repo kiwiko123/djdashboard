@@ -1,10 +1,10 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { classes } from './util';
+import { classes } from '../js/util';
 import PazaakCard from './PazaakCard';
 
-import './TableSide.css';
-import './common.css';
+import '../styles/common.css';
+import '../styles/TableSide.css';
 
 
 class TableSide extends PureComponent {
@@ -14,7 +14,7 @@ class TableSide extends PureComponent {
             columnLeftBorder: this.props.isPlayer,
         });
         const placedCards = this._getCards(this.props.placedCards, false);
-        const handCards = this._getCards(this.props.handCards, true);
+        const handCards = this.props.showHandCards && this._getCards(this.props.handCards, true);
 
         return (
             <div className="TableSide full-width">
@@ -34,10 +34,10 @@ class TableSide extends PureComponent {
     }
 
     _getCards(cards, isHand) {
-        return cards && cards.map(card => {
+        return cards && cards.map((card, index) => {
             return (
                 <PazaakCard
-                    key={card}
+                    key={index}
                     modifier={card}
                     isHandCard={isHand}
                 />
@@ -50,5 +50,10 @@ TableSide.propTypes = {
     isPlayer: PropTypes.bool,
     placedCards: PropTypes.array,
     handCards: PropTypes.array,
+    showHandCards: PropTypes.bool,
+};
+
+TableSide.defaultProps = {
+    showHandCards: true,
 };
 export default TableSide;

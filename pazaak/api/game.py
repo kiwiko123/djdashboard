@@ -1,7 +1,6 @@
-import collections
-
 from pazaak.game import cards
 from pazaak.game.game import PazaakGame, PazaakCard, Turn, GameOverError
+from pazaak.boiler.utilities import serialize
 
 
 def _init_game() -> PazaakGame:
@@ -22,13 +21,7 @@ class PazaakGameAPI:
         cls._game = _init_game()
         return cls.game()
 
-    @classmethod
-    def _move(cls, **fields):
-        field_decl = ['status', 'turn', 'is_standing', 'move', 'winner']
-        MoveInfo = collections.namedtuple('MoveInfo', field_decl)
-        return MoveInfo(**fields)
-
-    def _process_post(self, post_data: dict) -> dict:
+    def process_post(self, post_data: dict) -> dict:
         if 'winner' in post_data and post_data['winner']:
             return {
                 'status': 'game-over',
@@ -57,26 +50,22 @@ class PazaakGameAPI:
 
         # player ends turn - the opponent makes a move now
         if action == 'end-turn-player':
-            payload = self._next_move(Turn.OPPONENT)
-            context = payload._asdict()
+            context = self._next_move(Turn.OPPONENT)
 
         # opponent ends turn - the player makes a move now
         elif action == 'end-turn-opponent':
-            payload = self._next_move(Turn.PLAYER)
-            context = payload._asdict()
+            context = self._next_move(Turn.PLAYER)
 
         elif action == 'hand-player':
             card_index = post_data['card_index']
             assert card_index.isdigit(), 'expected numeric card index'
             card_index = int(card_index)
             move = self.game().player.hand.pop(card_index)
-            payload = self._next_move(Turn.PLAYER, move=move)
-            context = payload._asdict()
+            context = self._next_move(Turn.PLAYER, move=move)
 
         elif action == 'stand-player':
             self.game().player.is_standing = True
-            payload = self._next_move(Turn.PLAYER, make_move=False)
-            context = payload._asdict()
+            context = self._next_move(Turn.PLAYER, make_move=False)
 
         else:
             context['error'] = 'Invalid response'
@@ -101,7 +90,7 @@ class PazaakGameAPI:
             'status': 'play',
             'is_standing': player.is_standing,
             'turn': turn.value,
-            'move': move.modifier,
+            'move': move,
             'winner': None
         }
 
@@ -111,7 +100,7 @@ class PazaakGameAPI:
             except GameOverError as e:
                 context['winner'] = str(e)
 
-        return self._move(**context)
+        return serialize(**context)
 
 
     def _process_game_over(self) -> dict:
@@ -119,8 +108,8 @@ class PazaakGameAPI:
         assert winner_code != self.game().GAME_ON, 'game is not over'
 
         switch = {
-            self.game().PLAYER_WINS: 'player',
-            self.game().OPPONENT_WINS: 'opponent',
+            self.game().PLAYER_WINS: Turn.PLAYER.value,
+            self.game().OPPONENT_WINS: Turn.OPPONENT.value,
             self.game().TIE: 'tie'
         }
 
@@ -128,8 +117,3 @@ class PazaakGameAPI:
             'status': 'game_over',
             'winner': switch[winner_code]
         }
-
-    @staticmethod
-    def _extract_card_id(card_id: str) -> int:
-        pattern = '^card-[player|opponent]-hand-?P<index>(\w)$'
-        match = re.match(pattern, card_id)

@@ -4,7 +4,7 @@ import time
 from pazaak.game import cards
 from pazaak.game.cards import PazaakCard
 from pazaak.game.players import PazaakPlayer
-from pazaak.game.data_structures.hash_tables import MultiSet
+from pazaak.data_structures.hash_tables import MultiSet
 from pazaak.boiler.bases import Serializable
 
 
@@ -27,7 +27,6 @@ class PazaakGame(Serializable):
     OPPONENT_WINS = Turn.OPPONENT.value
     TIE = 'tie'
     _WINNING_SCORE = 20
-
     _turn_switch = {
         Turn.PLAYER: Turn.OPPONENT,
         Turn.OPPONENT: Turn.PLAYER
@@ -38,11 +37,11 @@ class PazaakGame(Serializable):
         self._hand_size = hand_size
         self._max_modifier = max_modifier
 
-        opponent_cards = cards.random_cards(self._hand_size, positive_only=True, bound=self._max_modifier)
+        opponent_cards = cards.random_cards(self._hand_size, positive_only=False, bound=self._max_modifier)
         opponent_hand = self._draw_hand(opponent_cards)
         player_hand = self._draw_hand(self._initial_pool)
 
-        self._opponent = PazaakPlayer(opponent_hand, Turn.OPPONENT.value, MultiSet)
+        self._opponent = PazaakPlayer(opponent_hand, Turn.OPPONENT.value, _hand_container_type=MultiSet)
         self._player = PazaakPlayer(player_hand, Turn.PLAYER.value)
         self._turn = Turn.PLAYER
 
@@ -96,11 +95,7 @@ class PazaakGame(Serializable):
 
 
     def _game_over(self, player: PazaakPlayer) -> bool:
-        conditions = (
-            player.score > self._WINNING_SCORE,
-            self.winner() != self.GAME_ON,
-        )
-        return any(conditions)
+        return player.score > self._WINNING_SCORE or self.winner() != self.GAME_ON
 
 
     def winner(self) -> int:
@@ -113,7 +108,7 @@ class PazaakGame(Serializable):
 
         # outscore: if both players are standing, the player with the highest score <= 20 wins
         elif self.player.is_standing and self.opponent.is_standing:
-            winning_player = max([self.player, self.opponent], key=lambda p: (p.score <= self._WINNING_SCORE, p.score))
+            winning_player = max((self.player, self.opponent), key=lambda p: (p.score <= self._WINNING_SCORE, p.score))
             result = self.PLAYER_WINS if winning_player is self.player else self.OPPONENT_WINS
 
         # filling the table: placing 9 cards without busting is an automatic win
@@ -131,11 +126,11 @@ class PazaakGame(Serializable):
 
     def _get_player_move(self) -> PazaakCard:
         if self.player.is_standing:
-            return None
+            return PazaakCard.empty()
 
         response = input('[e]nd turn, [s]tand, or use a card from your hand [1-{0}]: '.format(len(self.player.hand)))
         response = response.strip().upper()
-        move = None
+        move = PazaakCard.empty()
 
         if response.isnumeric():
             number = int(response)
@@ -147,7 +142,7 @@ class PazaakGame(Serializable):
                 return self._get_player_move()
 
         elif response == 'S':
-            self.player.is_standing = True
+            self.player.stand()
 
         else:
             move = cards.random_card(positive_only=True, bound=self._max_modifier)
@@ -156,20 +151,25 @@ class PazaakGame(Serializable):
 
 
     def _get_opponent_move(self) -> PazaakCard:
+        card = None
+        card_needed_to_win = PazaakCard(self._WINNING_SCORE - self.opponent.score)
+
         if self.opponent.is_standing:
-            return PazaakCard.empty()
+            card = PazaakCard.empty()
 
-        if self.opponent.score == self._WINNING_SCORE or \
+        elif self.opponent.score == self._WINNING_SCORE or \
            (self.player.is_standing and self.player.score < self.opponent.score <= self._WINNING_SCORE):
-            self.opponent.is_standing = True
-            return PazaakCard.empty()
+            self.opponent.stand()
+            card = PazaakCard.empty()
 
-        needed = PazaakCard(self._WINNING_SCORE - self.opponent.score)
-        if needed in self.opponent.hand:
-            self.opponent.hand.remove(needed)
-            return needed
+        elif card_needed_to_win in self.opponent.hand:
+            self.opponent.hand.remove(card_needed_to_win)
+            card = card_needed_to_win
 
-        return cards.random_card(positive_only=True, bound=self._max_modifier)
+        else:
+            card = cards.random_card(positive_only=True, bound=self._max_modifier)
+
+        return card
 
 
     def end_turn(self, turn: Turn, move: PazaakCard) -> None:
@@ -191,7 +191,7 @@ class PazaakGame(Serializable):
             self._turn = self._other_turn(self.turn)
 
             if player.score == self._WINNING_SCORE:
-                player.is_standing = True
+                player.stand()
 
             # ending a turn with a score over 20 is an automatic loss
             ended_turn_over_twenty = player.score > self._WINNING_SCORE
@@ -228,11 +228,9 @@ class PazaakGame(Serializable):
     def _filled_table(cls, player: PazaakPlayer) -> bool:
         return len(player.placed) >= 9 and player.score <= cls._WINNING_SCORE
 
-
     def _is_tied(self) -> bool:
         return (self.player.score == self._WINNING_SCORE and self.player.score == self.opponent.score) or \
                (self.player.score > self._WINNING_SCORE and self.opponent.score > self._WINNING_SCORE)
-
 
     def json(self) -> dict:
         return {

@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import PazaakGame from './PazaakGame';
+import PazaakGame from './components/PazaakGame';
 import * as serviceWorker from './serviceWorker';
 
 ReactDOM.render(<PazaakGame />, document.getElementById('root'));

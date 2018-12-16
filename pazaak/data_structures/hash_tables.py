@@ -8,7 +8,7 @@ class MultiSet(BaseContainer):
     def _container(self) -> collections.defaultdict:
         return self.__table
 
-    def __init__(self, iterable=[]):
+    def __init__(self, iterable=None):
         self.__table = collections.defaultdict(int)
         self._size = 0
         if iterable:
