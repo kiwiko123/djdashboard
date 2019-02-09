@@ -1,5 +1,6 @@
 import React from 'react';
 import { get } from 'lodash';
+
 import PlayerHeader from './PlayerHeader';
 import TableSide from './TableSide';
 import IconButton from './IconButton';
@@ -15,17 +16,31 @@ class PazaakGame extends React.Component {
 
     constructor(props) {
         super(props);
-        this.state = this._setUpState();
 
         this._processFirstMove = this._processFirstMove.bind(this);
         this._onClickEndTurn = this._onClickEndTurn.bind(this);
         this._onReceiveEndTurnResponse = this._onReceiveEndTurnResponse.bind(this);
         this._onEndTurnHandler = this._onEndTurnHandler.bind(this);
+
+        this.state = {
+            player: {
+                score: 0,
+                isStanding: false,
+                placed: [],
+                hand: [],
+            },
+            opponent: {
+                score: 0,
+                isStanding: false,
+                placed: [],
+                hand: [],
+            },
+            turn: PazaakGame.PLAYER,
+            disableActionButtons: true,
+            winner: '',
+        };
     }
 
-    /**
-     * Fires off an initial request that gets the starting player's first move.
-     */
     componentDidMount() {
         const url = '/pazaak/api/new-game/';
         RequestService.get(url)
@@ -44,26 +59,6 @@ class PazaakGame extends React.Component {
                 {actionButtons}
             </div>
         );
-    }
-
-    _setUpState() {
-        return {
-            player: {
-                score: 0,
-                isStanding: false,
-                placed: [],
-                hand: [],
-            },
-            opponent: {
-                score: 0,
-                isStanding: false,
-                placed: [],
-                hand: [],
-            },
-            turn: PazaakGame.PLAYER,
-            disableActionButtons: true,
-            winner: '',
-        };
     }
 
     _getPlayerHeader(player) {

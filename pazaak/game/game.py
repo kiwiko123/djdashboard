@@ -5,7 +5,7 @@ from pazaak.game import cards
 from pazaak.game.cards import PazaakCard
 from pazaak.game.players import PazaakPlayer
 from pazaak.data_structures.hash_tables import MultiSet
-from pazaak.boiler.bases import Serializable
+from pazaak.helpers.bases import Serializable
 
 
 _HAND_SIZE = 4

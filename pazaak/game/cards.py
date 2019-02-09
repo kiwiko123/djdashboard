@@ -1,6 +1,6 @@
 import random
 
-from pazaak.boiler.bases import Serializable
+from pazaak.helpers.bases import Serializable
 
 
 class PazaakCard(Serializable):
