@@ -1,13 +1,21 @@
+import abc
+
+from django.http import HttpRequest, HttpResponse
+from django.utils.decorators import method_decorator
+from django.views import generic
+from django.views.decorators.csrf import csrf_exempt
+
+from pazaak.server.url_tools import ViewURLAutoParser
 from pazaak.game import cards
 from pazaak.game.game import PazaakGame, PazaakCard, Turn, GameOverError
-from pazaak.boiler.utilities import serialize
+from pazaak.helpers.utilities import allow_cors, serialize
 
 
 def _init_game() -> PazaakGame:
     return PazaakGame(cards.random_cards(4, positive_only=False))
 
 
-class PazaakGameAPI:
+class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMeta):
     PLAYER_TAG = 'player'
     OPPONENT_TAG = 'opponent'
     _game = _init_game()
@@ -20,6 +28,14 @@ class PazaakGameAPI:
     def new_game(cls) -> PazaakGame:
         cls._game = _init_game()
         return cls.game()
+
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    @method_decorator(allow_cors)
+    def options(self, request: HttpRequest) -> HttpResponse:
+        return HttpResponse()
 
     def process_post(self, post_data: dict) -> dict:
         if 'winner' in post_data and post_data['winner']:

@@ -2,26 +2,20 @@ import json
 
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
-from django.views import generic
-from django.views.decorators.csrf import csrf_exempt
 
 from .game import cards
 from .api.game import PazaakGameAPI
-from .boiler.utilities import allow_cors, serialize
+from .helpers.utilities import allow_cors, serialize
 
 
-class NewGameView(generic.TemplateView, PazaakGameAPI):
+class NewGameView(PazaakGameAPI):
 
-    @method_decorator(csrf_exempt)
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
-
-    @method_decorator(allow_cors)
-    def options(self, request: HttpRequest) -> HttpResponse:
-        return HttpResponse()
+    @classmethod
+    def url(cls) -> str:
+        return '/api/new-game'
 
     @method_decorator(allow_cors)
-    def get(self, request: HttpRequest) -> JsonResponse:
+    def get(self, request: HttpRequest) -> HttpResponse:
         self.new_game()
         move = cards.random_card(positive_only=True, bound=self.game().max_modifier)
         # self.game().end_turn(Turn.PLAYER, move)
@@ -36,15 +30,11 @@ class NewGameView(generic.TemplateView, PazaakGameAPI):
         return JsonResponse(context)
 
 
-class EndTurnView(generic.TemplateView, PazaakGameAPI):
+class EndTurnView(PazaakGameAPI):
 
-    @method_decorator(csrf_exempt)
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
-
-    @method_decorator(allow_cors)
-    def options(self, request: HttpRequest) -> HttpResponse:
-        return HttpResponse()
+    @classmethod
+    def url(cls) -> str:
+        return '/api/end-turn'
 
     @method_decorator(allow_cors)
     def post(self, request: HttpResponse) -> JsonResponse:
