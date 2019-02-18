@@ -8,9 +8,11 @@ from django.views.decorators.csrf import csrf_exempt
 from pazaak.server.url_tools import ViewURLAutoParser
 from pazaak.api.actions import Actions
 from pazaak.game import cards
+from pazaak.game.errors import GameLogicError, GameOverError
+from pazaak.game.game import PazaakGame, PazaakCard
 from pazaak.game.turn import Turn
-from pazaak.game.game import PazaakGame, PazaakCard, GameOverError
-from pazaak.helpers.utilities import allow_cors, serialize
+from pazaak.helpers.bases import serialize
+from pazaak.helpers.utilities import allow_cors
 
 
 def _init_game() -> PazaakGame:
@@ -20,6 +22,7 @@ def _init_game() -> PazaakGame:
 class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMeta):
     PLAYER_TAG = 'player'
     OPPONENT_TAG = 'opponent'
+    _game = _init_game()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -27,10 +30,10 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
     @property
     def game(self):
-        return self._game
+        return PazaakGameAPI._game
 
     def new_game(self):
-        self._game = _init_game()
+        PazaakGameAPI._game = _init_game()
         return self.game
 
     @method_decorator(csrf_exempt)
@@ -43,47 +46,35 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
         return HttpResponse()
 
 
-    def process_post(self, post_data: dict) -> dict:
-        if 'winner' in post_data and post_data['winner']:
-            return {
-                'status': 'game-over',
-                'winner': post_data['winner']
-            }
-
-        context = self._process_player_move(post_data)
-        turn = context['turn']
+    def process_post(self, payload: dict) -> dict:
+        context = self._process_player_move(payload)
         content = self.game.json()
+        turn = context['turn']['justWent']['value']
+        if turn not in content:
+            raise GameLogicError('expected turn to be one of ("player", "opponent")')
 
-        switch = {
-            Turn.PLAYER.value: Turn.PLAYER,
-            Turn.OPPONENT.value: Turn.OPPONENT
-        }
-
-        turn = switch[turn]
-        assert turn in content, 'expected turn to be one of ("player", "opponent")'
         context.update(content[turn])
-
         return context
 
 
-    def _process_player_move(self, post_data: dict) -> dict:
-        if 'action' not in post_data:
-            return {}
+    def _process_player_move(self, payload: dict) -> dict:
+        if 'action' not in payload:
+            raise GameLogicError('did not receive "action" from payload')
 
-        action = post_data['action']
+        action = payload['action']
         action = action.strip().lower()
         context = {}
 
         # player ends turn - the opponent makes a move now
         if action == Actions.END_TURN_PLAYER.value:
-            context = self._next_move(Turn.OPPONENT)
+            context = self._next_move(Turn.PLAYER)
 
         # opponent ends turn - the player makes a move now
         elif action == Actions.END_TURN_OPPONENT.value:
-            context = self._next_move(Turn.PLAYER)
+            context = self._next_move(Turn.OPPONENT)
 
         elif action == Actions.HAND_PLAYER.value:
-            card_index = post_data['card_index']
+            card_index = payload['card_index']
             assert card_index.isdigit(), 'expected numeric card index'
             card_index = int(card_index)
             move = self.game.choose_from_hand(self.game.player, card_index)
@@ -114,19 +105,19 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
         context = {
             'status': 'play',
-            'is_standing': player.is_standing,
-            'turn': turn.value,
+            'isStanding': player.is_standing,
             'move': move,
-            'winner': None
+            'turn': {'justWent': self.game.turn}
         }
 
         if move is not None:
             try:
-                self.game.end_turn(turn, move)
+                context['status'] = self.game.end_turn(turn, move)
             except GameOverError as e:
-                context['winner'] = str(e)
+                context['status'] = str(e)
 
-        return serialize(**context)
+        context['turn']['upNext'] = self.game.turn
+        return serialize(context)
 
 
     def _process_game_over(self) -> dict:

@@ -1,7 +1,10 @@
 import enum
 
+from pazaak.helpers.bases import SerializableEnum
 
-class Turn(enum.Enum):
+
+@enum.unique
+class Turn(SerializableEnum):
     PLAYER = 'player'
     OPPONENT = 'opponent'
 
@@ -17,3 +20,6 @@ class Turn(enum.Enum):
         if turn not in switch:
             raise ValueError('{0} is not a valid Turn'.format(turn))
         return switch[turn]
+
+    def key(self) -> str:
+        return self.value

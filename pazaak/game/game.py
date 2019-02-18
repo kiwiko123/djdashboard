@@ -302,7 +302,11 @@ class PazaakGame(Serializable):
                (self.player.score > self._WINNING_SCORE and self.opponent.score > self._WINNING_SCORE)
 
 
-    def json(self) -> dict:
+    def key(self) -> str:
+        raise GameLogicError('PazaakGame object should not be a context key')
+
+
+    def context(self) -> dict:
         return {
             Turn.PLAYER: {
                 'score': self.player.score,

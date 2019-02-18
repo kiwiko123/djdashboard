@@ -1,4 +1,5 @@
 from pazaak.game.cards import PazaakCard
+from pazaak.game.errors import GameLogicError
 from pazaak.helpers.bases import Serializable
 
 
@@ -53,10 +54,13 @@ class PazaakPlayer(Serializable):
     def stand(self) -> None:
         self._is_standing = True
 
-    def json(self) -> dict:
+    def key(self) -> str:
+        raise GameLogicError('PazaakPlayer should not be a context key')
+
+    def context(self) -> dict:
         return {
-            'hand': [card.parity() for card in self.hand],
-            'placed': [card.parity() for card in self.placed],
+            'hand': list(self.hand),
+            'placed': self.placed,
             'score': self.score,
             'is_standing': self.is_standing,
             'identifier': self.identifier

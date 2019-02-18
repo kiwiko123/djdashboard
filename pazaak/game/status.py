@@ -1,8 +1,11 @@
+import abc
 import enum
 from pazaak.game.turn import Turn
+from pazaak.helpers.bases import SerializableEnum
 
 
-class GameStatus(enum.Enum):
+@enum.unique
+class GameStatus(SerializableEnum):
     PLAYER_WINS = 0
     OPPONENT_WINS = 1
     TIE = 2
@@ -22,3 +25,6 @@ class GameStatus(enum.Enum):
             raise ValueError('unexpected Turn received ({0})'.format(turn))
 
         return table[turn]
+
+    def key(self) -> str:
+        return self.name.lower()

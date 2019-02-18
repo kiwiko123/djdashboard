@@ -16,23 +16,6 @@ class allow_cors:
         return response
 
 
-def serialize(**payload) -> dict:
-    """
-    Recursively serializes the keyword arguments into a payload that JsonResponse should be able to consume.
-    Any object in the kwargs derived from Serializable will use their `.json()` method.
-    Returns the serialized kwargs as a dictionary.
-    """
-    for field, value in payload.items():
-        if isinstance(value, list):
-            payload[field] = [serialize(item) for item in value]
-        elif isinstance(value, dict):
-            payload[field] = serialize(**value)
-        elif isinstance(value, Serializable):
-            payload[field] = value.json()
-
-    return payload
-
-
 def first_true(iterable, predicate=None, default=None):
     """
     Returns the first item in iterable for which predicate returns True.

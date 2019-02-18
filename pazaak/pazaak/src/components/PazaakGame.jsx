@@ -17,7 +17,6 @@ class PazaakGame extends React.Component {
     constructor(props) {
         super(props);
 
-        this._processFirstMove = this._processFirstMove.bind(this);
         this._onClickEndTurn = this._onClickEndTurn.bind(this);
         this._onReceiveEndTurnResponse = this._onReceiveEndTurnResponse.bind(this);
         this._onEndTurnHandler = this._onEndTurnHandler.bind(this);
@@ -36,15 +35,7 @@ class PazaakGame extends React.Component {
                 hand: [],
             },
             turn: PazaakGame.PLAYER,
-            disableActionButtons: true,
-            winner: '',
         };
-    }
-
-    componentDidMount() {
-        const url = '/pazaak/api/new-game/';
-        RequestService.get(url)
-            .then(this._processFirstMove);
     }
 
     render() {
@@ -165,29 +156,7 @@ class PazaakGame extends React.Component {
         }
         return result;
     }
-
-    /**
-     * Processes the starting player's first move.
-     *
-     * @param payload the response received from '/pazaak/api/new-game'.
-     * @private
-     */
-    _processFirstMove(payload) {
-        const pseudoPayload = {
-            move: payload.move,
-        };
-        const firstMoveState = this._getEndTurnUpdatedState(pseudoPayload, PazaakGame.PLAYER);
-        this.setState({
-            player: {
-                ...payload.player,
-                ...firstMoveState.player,
-            },
-            opponent: payload.opponent,
-            turn: PazaakGame.PLAYER,
-            disableActionButtons: false,
-        });
-    }
-
+    
     /**
      * POSTs to the end-turn API endpoint.
      *
@@ -199,7 +168,6 @@ class PazaakGame extends React.Component {
         const payload = {
             action: `end-turn-${player}`,
             turn: player,
-            winner: this.state.winner,
         };
 
         RequestService.post(url, payload)
@@ -215,22 +183,19 @@ class PazaakGame extends React.Component {
     }
 
     _onEndTurnHandler(payload) {
-        const handler = this._onReceiveEndTurnResponse;
-        setTimeout(() => handler(payload), 1 * 750);
+        setTimeout(() => this._onReceiveEndTurnResponse(payload), 1 * 750);
     }
 
     _onReceiveEndTurnResponse(payload) {
-        const winner = payload.winner;
+        // shape: {name: string, value: number}
         const status = payload.status;
 
-        if (status === 'game-over') {
-            // TODO gameOver(winner);
-            return;
-        }
+        // TODO if status is something other than GAME_ON
 
-        let playerToUpdate = payload.turn;
+        const playerToUpdate = payload.turn.justWent.value;
+        const playerUpNext = payload.turn.upNext.value;
         const didPlayerJustGo = playerToUpdate === PazaakGame.PLAYER;
-        const isStanding = payload.is_standing;
+        const isStanding = payload.isStanding;
 
         // response.move is 0 when the player is standing (PazaakCard.empty())
         if (isStanding && !payload.move) {
@@ -239,23 +204,20 @@ class PazaakGame extends React.Component {
         }
 
         const updatedState = this._getEndTurnUpdatedState(payload, playerToUpdate);
-        if (winner) {
-            updatedState.winner = winner;
-        }
 
         // if it's the opponent's turn, get their next move.
         // otherwise, it's the player's turn, so wait for user input
-        const shouldSwitchTurn = isStanding || !didPlayerJustGo;
+        const shouldSwitchTurn = isStanding || didPlayerJustGo;
         if (shouldSwitchTurn) {
             // in this conditional:
             //   * otherPlayer is always PLAYER
             //   * didPlayerJustGo is always false
-            this._getNextMove(playerToUpdate);
+            this._getNextMove(playerUpNext);
         }
 
         this.setState({
             ...updatedState,
-            turn: playerToUpdate,
+            turn: playerUpNext,
             disableActionButtons: shouldSwitchTurn,
         });
     }

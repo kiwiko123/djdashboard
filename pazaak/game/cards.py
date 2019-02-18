@@ -1,5 +1,6 @@
 import random
 
+from pazaak.game.errors import GameLogicError
 from pazaak.helpers.bases import Serializable
 from pazaak.helpers.utilities import coin_flip
 
@@ -59,7 +60,10 @@ class PazaakCard(Serializable):
         p = '+' if self.modifier > 0 else ''
         return '{0}{1}'.format(p, self.modifier)
 
-    def json(self) -> dict:
+    def key(self) -> str:
+        raise GameLogicError('PazaakCard should not be a context key')
+
+    def context(self) -> dict:
         return {
             'modifier': self.modifier,
             'parity': self.parity()
