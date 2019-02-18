@@ -6,8 +6,10 @@ from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 
 from pazaak.server.url_tools import ViewURLAutoParser
+from pazaak.api.actions import Actions
 from pazaak.game import cards
-from pazaak.game.game import PazaakGame, PazaakCard, Turn, GameOverError
+from pazaak.game.turn import Turn
+from pazaak.game.game import PazaakGame, PazaakCard, GameOverError
 from pazaak.helpers.utilities import allow_cors, serialize
 
 
@@ -18,24 +20,28 @@ def _init_game() -> PazaakGame:
 class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMeta):
     PLAYER_TAG = 'player'
     OPPONENT_TAG = 'opponent'
-    _game = _init_game()
 
-    @classmethod
-    def game(cls) -> PazaakGame:
-        return cls._game
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._game = _init_game()
 
-    @classmethod
-    def new_game(cls) -> PazaakGame:
-        cls._game = _init_game()
-        return cls.game()
+    @property
+    def game(self):
+        return self._game
+
+    def new_game(self):
+        self._game = _init_game()
+        return self.game
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
+
     @method_decorator(allow_cors)
     def options(self, request: HttpRequest) -> HttpResponse:
         return HttpResponse()
+
 
     def process_post(self, post_data: dict) -> dict:
         if 'winner' in post_data and post_data['winner']:
@@ -46,9 +52,13 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
         context = self._process_player_move(post_data)
         turn = context['turn']
-        content = self.game().json()
+        content = self.game.json()
 
-        switch = {Turn.PLAYER.value: Turn.PLAYER, Turn.OPPONENT.value: Turn.OPPONENT}
+        switch = {
+            Turn.PLAYER.value: Turn.PLAYER,
+            Turn.OPPONENT.value: Turn.OPPONENT
+        }
+
         turn = switch[turn]
         assert turn in content, 'expected turn to be one of ("player", "opponent")'
         context.update(content[turn])
@@ -65,22 +75,22 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
         context = {}
 
         # player ends turn - the opponent makes a move now
-        if action == 'end-turn-player':
+        if action == Actions.END_TURN_PLAYER.value:
             context = self._next_move(Turn.OPPONENT)
 
         # opponent ends turn - the player makes a move now
-        elif action == 'end-turn-opponent':
+        elif action == Actions.END_TURN_OPPONENT.value:
             context = self._next_move(Turn.PLAYER)
 
-        elif action == 'hand-player':
+        elif action == Actions.HAND_PLAYER.value:
             card_index = post_data['card_index']
             assert card_index.isdigit(), 'expected numeric card index'
             card_index = int(card_index)
-            move = self.game().player.hand.pop(card_index)
+            move = self.game.choose_from_hand(self.game.player, card_index)
             context = self._next_move(Turn.PLAYER, move=move)
 
-        elif action == 'stand-player':
-            self.game().player.is_standing = True
+        elif action == Actions.STAND_PLAYER.value:
+            self.game.player.is_standing = True
             context = self._next_move(Turn.PLAYER, make_move=False)
 
         else:
@@ -93,14 +103,14 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
         player = None
 
         if turn == Turn.PLAYER:
-            player = self.game().player
-            if self.game().player.is_standing:
+            player = self.game.player
+            if self.game.player.is_standing:
                 move = PazaakCard.empty()
             elif move is None:
-                move = cards.random_card(positive_only=True, bound=self.game().max_modifier)
+                move = cards.random_card(positive_only=True, bound=self.game.max_modifier)
         else:
-            player = self.game().opponent
-            move = self.game()._get_opponent_move()
+            player = self.game.opponent
+            move = self.game._get_opponent_move()
 
         context = {
             'status': 'play',
@@ -112,7 +122,7 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
         if move is not None:
             try:
-                self.game().end_turn(turn, move)
+                self.game.end_turn(turn, move)
             except GameOverError as e:
                 context['winner'] = str(e)
 
@@ -120,13 +130,13 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
 
     def _process_game_over(self) -> dict:
-        winner_code = self.game().winner()
-        assert winner_code != self.game().GAME_ON, 'game is not over'
+        winner_code = self.game.winner()
+        assert winner_code != self.game.GAME_ON, 'game is not over'
 
         switch = {
-            self.game().PLAYER_WINS: Turn.PLAYER.value,
-            self.game().OPPONENT_WINS: Turn.OPPONENT.value,
-            self.game().TIE: 'tie'
+            self.game.PLAYER_WINS: Turn.PLAYER.value,
+            self.game.OPPONENT_WINS: Turn.OPPONENT.value,
+            self.game.TIE: 'tie'
         }
 
         return {

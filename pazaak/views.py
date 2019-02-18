@@ -17,12 +17,12 @@ class NewGameView(PazaakGameAPI):
     @method_decorator(allow_cors)
     def get(self, request: HttpRequest) -> HttpResponse:
         self.new_game()
-        move = cards.random_card(positive_only=True, bound=self.game().max_modifier)
+        move = cards.random_card(positive_only=True, bound=self.game.max_modifier)
         # self.game().end_turn(Turn.PLAYER, move)
 
         context = serialize(
-            player=self.game().player,
-            opponent=self.game().opponent,
+            player=self.game.player,
+            opponent=self.game.opponent,
             move=move,
             status='start'
         )
