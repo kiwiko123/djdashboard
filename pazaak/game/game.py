@@ -1,36 +1,23 @@
-import enum
 import random
 import time
 from pazaak.game import cards
 from pazaak.game.cards import PazaakCard
+from pazaak.game.errors import GameLogicError, GameOverError
 from pazaak.game.players import PazaakPlayer
+from pazaak.game.status import GameStatus
+from pazaak.game.turn import Turn
 from pazaak.data_structures.hash_tables import MultiSet
 from pazaak.helpers.bases import Serializable
+from pazaak.helpers.utilities import first_true
 
 
 _HAND_SIZE = 4
 _MAX_MODIFIER = 10
 
 
-class Turn(enum.Enum):
-    PLAYER = 'player'
-    OPPONENT = 'opponent'
-
-
-class GameOverError(Exception):
-    pass
-
-
 class PazaakGame(Serializable):
-    GAME_ON = 0
-    PLAYER_WINS = Turn.PLAYER.value
-    OPPONENT_WINS = Turn.OPPONENT.value
-    TIE = 'tie'
     _WINNING_SCORE = 20
-    _turn_switch = {
-        Turn.PLAYER: Turn.OPPONENT,
-        Turn.OPPONENT: Turn.PLAYER
-    }
+    _FILLED_TABLE_THRESHOLD = 9     # the number of cards a player has placed before winning by filling the table
 
     def __init__(self, initial_pool: [PazaakCard], hand_size=_HAND_SIZE, max_modifier=_MAX_MODIFIER):
         self._initial_pool = initial_pool
@@ -41,108 +28,227 @@ class PazaakGame(Serializable):
         opponent_hand = self._draw_hand(opponent_cards)
         player_hand = self._draw_hand(self._initial_pool)
 
+        # making the opponent's hand a hash table adds some efficiency gain -- see self._get_opponent_move()
         self._opponent = PazaakPlayer(opponent_hand, Turn.OPPONENT.value, _hand_container_type=MultiSet)
         self._player = PazaakPlayer(player_hand, Turn.PLAYER.value)
         self._turn = Turn.PLAYER
+
 
     @property
     def player(self) -> PazaakPlayer:
         return self._player
 
+
     @property
     def opponent(self) -> PazaakPlayer:
         return self._opponent
+
 
     @property
     def max_modifier(self) -> int:
         return self._max_modifier
 
+
     @property
     def turn(self) -> Turn:
         return self._turn
 
-    @classmethod
-    def _other_turn(cls, player: PazaakPlayer) -> Turn:
-        return cls._turn_switch[player]
 
-    def _other_player(self, player: PazaakPlayer) -> PazaakPlayer:
-        return self.player if player == self.opponent else self.opponent
+    def _players(self) -> (PazaakPlayer,):
+        """
+        Returns a tuple of the players in the game.
+        """
+        return (self.player, self.opponent)
+
+
+    def _game_status_from_player(self, player: PazaakPlayer) -> GameStatus:
+        """
+        Given a player, return the GameStatus corresponding to them.
+        """
+        table = {
+            self.player: GameStatus.PLAYER_WINS,
+            self.opponent: GameStatus.OPPONENT_WINS
+        }
+
+        if player not in table:
+            raise ValueError('received unexpected player {0}'.format(player))
+
+        return table[player]
 
 
     def start(self) -> None:
-        winner = ''
+        """
+        Begins a console-based version of Pazaak.
+        The player goes first.
+        """
         self._print_player_game(self.player)
         self._print_player_game(self.opponent)
+        status = GameStatus.GAME_ON
+        switch = {
+            Turn.PLAYER: self.player,
+            Turn.OPPONENT: self.opponent
+        }
 
-        while not self.game_over():
+        while not status:
             try:
-                player_move = self._get_player_move()
-                self.end_turn(Turn.PLAYER, player_move)
-                self._print_player_game(self.player)
-
-                opponent_move = self._get_opponent_move()
-                self.end_turn(Turn.OPPONENT, opponent_move)
-                self._print_player_game(self.opponent, show_hand=True)
+                turn = self._turn
+                current_player = switch[turn]
+                move = self._get_move(current_player)
+                status = self.end_turn(turn, move)
+                self._print_player_game(current_player, show_hand=True)
                 time.sleep(0.5)
 
             except GameOverError as e:
-                winner = str(e)
+                status = str(e)
                 break
 
-        if not winner:
-            winner = self.winner()
-        print('Winner: {0}!'.format(winner))
+        if not status:
+            status = self.winner()
+        print('Winner: {0}!'.format(status))
 
 
-    def _game_over(self, player: PazaakPlayer) -> bool:
-        return player.score > self._WINNING_SCORE or self.winner() != self.GAME_ON
+    def end_turn(self, turn: Turn, move: PazaakCard) -> GameStatus:
+        """
+        Given a turn and a move, updates the game for the specified player.
+        If the player is already standing, no move will be made.
+        Automatically switches self._turn.
+        Calculates and returns the game's updated status.
+        """
+        switch = {
+            Turn.PLAYER: self.player,
+            Turn.OPPONENT: self.opponent
+        }
+        player = switch[turn]
+        opposite_turn = Turn.opposite_turn(self._turn)
+        status = GameStatus.GAME_ON
 
-
-    def winner(self) -> int:
-        # return early for efficiency
-        if all(not player.is_standing and player.score < self._WINNING_SCORE for player in (self.player, self.opponent)):
-            return self.GAME_ON
-
-        elif self._is_tied():
-            result = self.TIE
-
-        # outscore: if both players are standing, the player with the highest score <= 20 wins
-        elif self.player.is_standing and self.opponent.is_standing:
-            winning_player = max((self.player, self.opponent), key=lambda p: (p.score <= self._WINNING_SCORE, p.score))
-            result = self.PLAYER_WINS if winning_player is self.player else self.OPPONENT_WINS
-
-        # filling the table: placing 9 cards without busting is an automatic win
-        elif self._filled_table(self.player):
-            result = self.PLAYER_WINS
-
-        elif self._filled_table(self.opponent):
-            result = self.OPPONENT_WINS
+        if player.is_standing:
+            status = self.winner()
 
         else:
-            result = self.GAME_ON
+            player.placed.append(move)
+            player.score += move.modifier
 
-        return result
+            if player.score == self._WINNING_SCORE:
+                player.stand()
+
+            # ending a turn with a score over 20 is an automatic loss
+            if player.score > self._WINNING_SCORE:
+                status = GameStatus.from_turn(opposite_turn)
+            else:
+                status = self.winner()
+
+        self._turn = opposite_turn
+        return status
+
+
+    def choose_from_hand(self, player: PazaakPlayer, card_index: int) -> PazaakCard:
+        """
+        Chooses and returns the index of the card from the player's hand.
+        Removes that card from the player's hand.
+        Note that card_index is expected to be 0-based, but will 1-based from the player's UI.
+        """
+        container_type = type(player.hand)
+        if not hasattr(container_type, 'pop'):
+            raise GameLogicError('custom hand container type {0} for {1} has no "pop" method'.format(container_type, player))
+
+        if card_index > len(player.hand):
+            raise GameLogicError('hand-card index {0} out of bounds for {1}'.format(card_index, player))
+
+        return player.hand.pop(card_index)
+
+
+    def winner(self) -> GameStatus:
+        outscored = self._outscored()
+        filled_table = self._filled_table()
+
+        results = (outscored, filled_table)
+        return first_true(results, default=GameStatus.GAME_ON)
+
+
+    def _forfeited(self) -> GameStatus:
+        pass
+
+
+    def _outscored(self) -> GameStatus:
+        """
+        Determines if any player has won by outscore.
+        Outscoring happens when both players are standing - the one with the highest score <= 20 wins.
+        Returns the applicable GameStatus.
+        """
+        status = None
+        if not all(player.is_standing for player in self._players()):
+            # if no one is standing yet, then continue the game
+            status = GameStatus.GAME_ON
+
+        elif self.player.score == self.opponent.score:
+            status = GameStatus.TIE
+
+        else:
+            winning_player = max(self._players(), key=lambda player: (player.score <= self._WINNING_SCORE, player.score))
+            status = self._game_status_from_player(winning_player)
+
+        return status
+
+
+    def _filled_table(self) -> GameStatus:
+        """
+        Determines if any player has won by filling the table.
+        Filling the table happens when has placed 9 cards without going bust, and still has a score under 20.
+        This is an automatic win.
+        Returns the applicable GameStatus.
+        :return:
+        """
+        results = {self._game_status_from_player(player): self._player_filled_table(player) for player in self._players()}
+        return first_true(results, predicate=lambda status: results[status], default=GameStatus.GAME_ON)
+
+
+    def _player_filled_table(self, player: PazaakPlayer) -> bool:
+        return len(player.placed) >= self._FILLED_TABLE_THRESHOLD and player.score <= self._WINNING_SCORE
+
+
+    def _get_move(self, player: PazaakPlayer) -> PazaakCard:
+        if player.is_standing:
+            return PazaakCard.empty()
+
+        table = {
+            self.player: self._get_player_move,
+            self.opponent: self._get_opponent_move
+        }
+
+        if player not in table:
+            raise ValueError('received unexpected player {0}'.format(player))
+
+        method = table[player]
+        return method()
 
 
     def _get_player_move(self) -> PazaakCard:
-        if self.player.is_standing:
-            return PazaakCard.empty()
+        prompt = ''
+        if self.player.hand:
+            cards_in_hand = len(self.player.hand)
+            range = str(cards_in_hand) if cards_in_hand == 1 else '1-{0}'.format(cards_in_hand)
+            prompt = '[e]nd turn, [s]tand, or use a card from your hand [{0}]: '.format(range)
+        else:
+            prompt = '[e]nd turn or [s]tand: '
 
-        response = input('[e]nd turn, [s]tand, or use a card from your hand [1-{0}]: '.format(len(self.player.hand)))
+        response = input(prompt)
         response = response.strip().upper()
         move = PazaakCard.empty()
 
         if response.isnumeric():
             number = int(response)
             if 1 <= number <= len(self.player.hand):
-                move = self.player.hand[number - 1]
-                self.player.hand.pop(number - 1)
+                move = self.choose_from_hand(self.player, number - 1)
             else:
                 print('Invalid number, choose again')
                 return self._get_player_move()
 
         elif response == 'S':
             self.player.stand()
+
+        elif response == 'Q':
+            raise GameOverError('Player forfeited the game')
 
         else:
             move = cards.random_card(positive_only=True, bound=self._max_modifier)
@@ -154,10 +260,7 @@ class PazaakGame(Serializable):
         card = None
         card_needed_to_win = PazaakCard(self._WINNING_SCORE - self.opponent.score)
 
-        if self.opponent.is_standing:
-            card = PazaakCard.empty()
-
-        elif self.opponent.score == self._WINNING_SCORE or \
+        if self.opponent.score == self._WINNING_SCORE or \
            (self.player.is_standing and self.player.score < self.opponent.score <= self._WINNING_SCORE):
             self.opponent.stand()
             card = PazaakCard.empty()
@@ -170,34 +273,6 @@ class PazaakGame(Serializable):
             card = cards.random_card(positive_only=True, bound=self._max_modifier)
 
         return card
-
-
-    def end_turn(self, turn: Turn, move: PazaakCard) -> None:
-        switch = {
-            Turn.PLAYER: self.player,
-            Turn.OPPONENT: self.opponent
-        }
-        player = switch[turn]
-
-        if player.is_standing:
-            winner = self.winner()
-            if winner != self.GAME_ON:
-                raise GameOverError(winner)
-
-        else:
-            assert move is not None, 'expected PazaakCard; received `None`'
-            player.placed.append(move)
-            player.score += move.modifier
-            self._turn = self._other_turn(self.turn)
-
-            if player.score == self._WINNING_SCORE:
-                player.stand()
-
-            # ending a turn with a score over 20 is an automatic loss
-            ended_turn_over_twenty = player.score > self._WINNING_SCORE
-            winner = self.winner()
-            if ended_turn_over_twenty or winner != self.GAME_ON:
-                raise GameOverError(self._turn.value if ended_turn_over_twenty else winner)
 
 
     def _print_player_game(self, player: PazaakPlayer, show_hand=True) -> None:
@@ -215,6 +290,7 @@ class PazaakGame(Serializable):
 
         print()
 
+
     def _draw_hand(self, pool: [PazaakCard]) -> [PazaakCard]:
         """
         Return a list of PazaakCards representing a player's "hand".
@@ -224,26 +300,30 @@ class PazaakGame(Serializable):
         """
         return random.sample(pool, self._hand_size)
 
-    @classmethod
-    def _filled_table(cls, player: PazaakPlayer) -> bool:
-        return len(player.placed) >= 9 and player.score <= cls._WINNING_SCORE
 
     def _is_tied(self) -> bool:
         return (self.player.score == self._WINNING_SCORE and self.player.score == self.opponent.score) or \
                (self.player.score > self._WINNING_SCORE and self.opponent.score > self._WINNING_SCORE)
 
-    def json(self) -> dict:
+
+    def key(self) -> str:
+        raise GameLogicError('PazaakGame object should not be a context key')
+
+
+    def context(self) -> dict:
         return {
             Turn.PLAYER: {
                 'score': self.player.score,
-                'hand': [card.parity() for card in self.player.hand],
+                'hand': self.player.hand,
+                'placed': self.player.placed,
                 # 'last_placed': self.player.placed[-1].parity() if self.player.placed else 0,
                 'size': len(self.player.placed),
                 'is_standing': self.player.is_standing
             },
             Turn.OPPONENT: {
                 'score': self.opponent.score,
-                'hand': [card.parity() for card in self.opponent.hand],
+                'hand': list(self.opponent.hand),
+                'placed': self.opponent.placed,
                 # 'last_placed': self.opponent.placed[-1].parity() if self.opponent.placed else 0,
                 'size': len(self.opponent.placed),
                 'is_standing': self.opponent.is_standing

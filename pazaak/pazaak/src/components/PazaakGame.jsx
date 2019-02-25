@@ -17,34 +17,12 @@ class PazaakGame extends React.Component {
     constructor(props) {
         super(props);
 
-        this._processFirstMove = this._processFirstMove.bind(this);
         this._onClickEndTurn = this._onClickEndTurn.bind(this);
+        this._onClickStand = this._onClickStand.bind(this);
         this._onReceiveEndTurnResponse = this._onReceiveEndTurnResponse.bind(this);
         this._onEndTurnHandler = this._onEndTurnHandler.bind(this);
 
-        this.state = {
-            player: {
-                score: 0,
-                isStanding: false,
-                placed: [],
-                hand: [],
-            },
-            opponent: {
-                score: 0,
-                isStanding: false,
-                placed: [],
-                hand: [],
-            },
-            turn: PazaakGame.PLAYER,
-            disableActionButtons: true,
-            winner: '',
-        };
-    }
-
-    componentDidMount() {
-        const url = '/pazaak/api/new-game/';
-        RequestService.get(url)
-            .then(this._processFirstMove);
+        this.state = this._getInitialState();
     }
 
     render() {
@@ -127,65 +105,38 @@ class PazaakGame extends React.Component {
         return (
             <div className="row horizontal-row full-width">
                 <IconButton
-                    label="End Turn"
-                    bsStyle="success"
-                    faClassName="fas fa-play"
+                    variant="success"
+                    fontAwesomeClassName="fas fa-play"
                     disabled={this.state.disableActionButtons}
+                    disableOnClick={true}
+                    showSpinnerOnClick={true}
                     onClick={this._onClickEndTurn}
-                />
+                >
+                    End Turn
+                </IconButton>
 
                 <IconButton
-                    label="Stand"
-                    bsStyle="warning"
-                    faClassName="fas fa-hand-paper"
+                    variant="warning"
+                    fontAwesomeClassName="fas fa-arrow-up"
+                    disableOnClick={true}
+                    showSpinnerOnClick={true}
                     disabled={this.state.disableActionButtons}
-                />
+                    onClick={this._onClickStand}
+                >
+                    Stand
+                </IconButton>
 
                 <IconButton
-                    label="Start Over"
-                    bsStyle="danger"
-                    faClassName="fas fa-redo"
-                    disabled={this.state.disableActionButtons}
-                />
+                    variant="danger"
+                    fontAwesomeClassName="fas fa-redo"
+                    disableOnClick={true}
+                    showSpinnerOnClick={true}
+                    onClick={this._onStartOver}
+                >
+                    Start Over
+                </IconButton>
             </div>
         );
-    }
-
-    _oppositePlayer(player) {
-        let result;
-        switch (player) {
-            case PazaakGame.PLAYER:
-                result = PazaakGame.OPPONENT;
-                break;
-            case PazaakGame.OPPONENT:
-                result = PazaakGame.PLAYER;
-                break;
-            default:
-                console.error('invalid argument passed to _oppositePlayer');
-        }
-        return result;
-    }
-
-    /**
-     * Processes the starting player's first move.
-     *
-     * @param payload the response received from '/pazaak/api/new-game'.
-     * @private
-     */
-    _processFirstMove(payload) {
-        const pseudoPayload = {
-            move: payload.move,
-        };
-        const firstMoveState = this._getEndTurnUpdatedState(pseudoPayload, PazaakGame.PLAYER);
-        this.setState({
-            player: {
-                ...payload.player,
-                ...firstMoveState.player,
-            },
-            opponent: payload.opponent,
-            turn: PazaakGame.PLAYER,
-            disableActionButtons: false,
-        });
     }
 
     /**
@@ -199,7 +150,7 @@ class PazaakGame extends React.Component {
         const payload = {
             action: `end-turn-${player}`,
             turn: player,
-            winner: this.state.winner,
+            gameId: this.state.gameId,
         };
 
         RequestService.post(url, payload)
@@ -215,77 +166,99 @@ class PazaakGame extends React.Component {
     }
 
     _onEndTurnHandler(payload) {
-        const handler = this._onReceiveEndTurnResponse;
-        setTimeout(() => handler(payload), 1 * 750);
+        setTimeout(() => this._onReceiveEndTurnResponse(payload), 1 * 750);
     }
 
     _onReceiveEndTurnResponse(payload) {
-        const winner = payload.winner;
+        // shape: {name: string, value: number}
         const status = payload.status;
 
-        if (status === 'game-over') {
-            // TODO gameOver(winner);
-            return;
-        }
+        // TODO if status is something other than GAME_ON
 
-        let playerToUpdate = payload.turn;
-        const didPlayerJustGo = playerToUpdate === PazaakGame.PLAYER;
-        const isStanding = payload.is_standing;
+        const playerToUpdate = payload.turn.justWent.value;
+        const playerUpNext = payload.turn.upNext.value;
 
-        // response.move is 0 when the player is standing (PazaakCard.empty())
-        if (isStanding && !payload.move) {
-            // hacky way to not update the player's side if they're standing
-            payload.move = null;
-        }
+        // // response.move is 0 when the player is standing (PazaakCard.empty())
+        // if (isStanding && !payload.move) {
+        //     // hacky way to not update the player's side if they're standing
+        //     payload.move = null;
+        // }
+
+        const shouldWaitForUserInput = playerUpNext === PazaakGame.PLAYER && !this.state.player.isStanding;
 
         const updatedState = this._getEndTurnUpdatedState(payload, playerToUpdate);
-        if (winner) {
-            updatedState.winner = winner;
-        }
-
-        // if it's the opponent's turn, get their next move.
-        // otherwise, it's the player's turn, so wait for user input
-        const shouldSwitchTurn = isStanding || !didPlayerJustGo;
-        if (shouldSwitchTurn) {
-            // in this conditional:
-            //   * otherPlayer is always PLAYER
-            //   * didPlayerJustGo is always false
-            this._getNextMove(playerToUpdate);
-        }
-
         this.setState({
             ...updatedState,
-            turn: playerToUpdate,
-            disableActionButtons: shouldSwitchTurn,
+            turn: playerUpNext,
+            disableActionButtons: !shouldWaitForUserInput,
         });
+
+        if (!shouldWaitForUserInput) {
+            this._getNextMove(playerUpNext);
+        }
     }
 
     _getEndTurnUpdatedState(payload, player) {
-        const cardPlaced = payload.move;
+        const playerData = {
+            score: payload.score,
+            placed: payload.placed.map(card => card.parity),
+            isStanding: payload.isStanding,
+        };
         let state = {};
 
         switch (player) {
             case PazaakGame.PLAYER:
-                state = {
-                    player: {
-                        score: this.state.player.score + cardPlaced.modifier,
-                        placed: [...this.state.player.placed, cardPlaced.parity],
-                    },
-                };
+                state = { player: playerData };
                 break;
             case PazaakGame.OPPONENT:
-                state = {
-                    opponent: {
-                        score: this.state.opponent.score + cardPlaced.modifier,
-                        placed: [...this.state.opponent.placed, cardPlaced.parity],
-                    },
-                };
+                state = { opponent: playerData };
                 break;
             default:
                 console.error('invalid player argument passed to _updateSideFor');
         }
 
         return state;
+    }
+
+    _getInitialState() {
+        return {
+            player: {
+                score: 0,
+                isStanding: false,
+                placed: [],
+                hand: [],
+            },
+            opponent: {
+                score: 0,
+                isStanding: false,
+                placed: [],
+                hand: [],
+            },
+            turn: PazaakGame.PLAYER,
+            disableActionButtons: false,
+        };
+    }
+
+    _onStartOver() {
+        const url = '/pazaak/api/new-game';
+        RequestService.get(url)
+            .then(this._newGame);
+    }
+
+    _newGame() {
+        const state = this._getInitialState();
+        this.setState(state);
+    }
+
+    _onClickStand() {
+        this._onStand(PazaakGame.PLAYER);
+    }
+
+    _onStand(player) {
+        const url = '/pazaak/api/stand';
+        const payload = { action: `stand-${player}` };
+        RequestService.post(url, payload)
+            .then(this._onReceiveEndTurnResponse);
     }
 }
 

@@ -1,4 +1,5 @@
 from pazaak.game.cards import PazaakCard
+from pazaak.game.errors import GameLogicError
 from pazaak.helpers.bases import Serializable
 
 
@@ -14,20 +15,30 @@ class PazaakPlayer(Serializable):
         self._hand = hand if _hand_container_type is list else _hand_container_type(hand)
         self._score = 0
         self._is_standing = False
-        self.placed = []
+        self._placed = []
         self._identifier = identifier
+        self._forfeited = False
+
+    def __str__(self) -> str:
+        return 'PazaakPlayer({0})'.format(self.identifier)
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, PazaakPlayer) and self.identifier == other.identifier
+
+    def __hash__(self) -> int:
+        return hash(self.identifier)
 
     @property
     def hand(self) -> [PazaakCard]:
         return self._hand
 
     @property
+    def placed(self) -> [PazaakCard]:
+        return self._placed
+
+    @property
     def is_standing(self) -> bool:
         return self._is_standing
-
-    @is_standing.setter
-    def is_standing(self, new_status: bool) -> None:
-        self._is_standing = new_status
 
     @property
     def score(self) -> int:
@@ -37,19 +48,29 @@ class PazaakPlayer(Serializable):
     def score(self, new_score: int) -> None:
         self._score = new_score
 
-    def stand(self) -> None:
-        self.is_standing = True
-
     @property
     def identifier(self) -> str:
         return self._identifier
 
-    def json(self) -> dict:
+    @property
+    def forfeited(self) -> bool:
+        return self._forfeited
+
+    def stand(self) -> None:
+        self._is_standing = True
+
+    def forfeit(self) -> None:
+        self._forfeited = True
+
+    def key(self) -> str:
+        raise GameLogicError('PazaakPlayer should not be a context key')
+
+    def context(self) -> dict:
         return {
-            'hand': [card.parity() for card in self.hand],
-            'placed': [card.parity() for card in self.placed],
+            'hand': list(self.hand),
+            'placed': self.placed,
             'score': self.score,
-            'is_standing': self.is_standing,
+            'isStanding': self.is_standing,
             'identifier': self.identifier
         }
 
