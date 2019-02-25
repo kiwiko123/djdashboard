@@ -21,8 +21,11 @@ class PazaakGame extends React.Component {
         this._onClickStand = this._onClickStand.bind(this);
         this._onReceiveEndTurnResponse = this._onReceiveEndTurnResponse.bind(this);
         this._onEndTurnHandler = this._onEndTurnHandler.bind(this);
+        this._onStartOver = this._onStartOver.bind(this);
+        this._newGame = this._newGame.bind(this);
 
         this.state = this._getInitialState();
+        this._requestService = new RequestService('http://localhost:8000');
     }
 
     render() {
@@ -66,14 +69,24 @@ class PazaakGame extends React.Component {
     }
 
     _getScoreRow() {
+        const gameOverBanner = this._getGameOverBanner();
         const playerScore = this._getPlayerHeader(PazaakGame.PLAYER);
         const opponentScore = this._getPlayerHeader(PazaakGame.OPPONENT);
 
         return (
             <div className="row">
+                {gameOverBanner}
                 {playerScore}
                 {opponentScore}
             </div>
+        );
+    }
+
+    _getGameOverBanner() {
+        return this.state.gameOver.value && (
+            <span>
+                {this.state.gameOver.message}
+            </span>
         );
     }
 
@@ -102,12 +115,13 @@ class PazaakGame extends React.Component {
     }
 
     _getActionButtons() {
+        const disableActionButtons = this.state.disableActionButtons || this.state.gameOver.value;
         return (
             <div className="row horizontal-row full-width">
                 <IconButton
                     variant="success"
                     fontAwesomeClassName="fas fa-play"
-                    disabled={this.state.disableActionButtons}
+                    disabled={disableActionButtons}
                     disableOnClick={true}
                     showSpinnerOnClick={true}
                     onClick={this._onClickEndTurn}
@@ -120,7 +134,7 @@ class PazaakGame extends React.Component {
                     fontAwesomeClassName="fas fa-arrow-up"
                     disableOnClick={true}
                     showSpinnerOnClick={true}
-                    disabled={this.state.disableActionButtons}
+                    disabled={disableActionButtons}
                     onClick={this._onClickStand}
                 >
                     Stand
@@ -129,6 +143,7 @@ class PazaakGame extends React.Component {
                 <IconButton
                     variant="danger"
                     fontAwesomeClassName="fas fa-redo"
+                    // disabled={this.state.isNewGame}
                     disableOnClick={true}
                     showSpinnerOnClick={true}
                     onClick={this._onStartOver}
@@ -153,7 +168,7 @@ class PazaakGame extends React.Component {
             gameId: this.state.gameId,
         };
 
-        RequestService.post(url, payload)
+        this._requestService.post(url, payload)
             .then(this._onEndTurnHandler);
     }
 
@@ -172,11 +187,13 @@ class PazaakGame extends React.Component {
     _onReceiveEndTurnResponse(payload) {
         // shape: {name: string, value: number}
         const status = payload.status;
+        const gameOver = this._handleWinner(status);
 
         // TODO if status is something other than GAME_ON
 
         const playerToUpdate = payload.turn.justWent.value;
         const playerUpNext = payload.turn.upNext.value;
+        const isPlayerStanding = (playerToUpdate === PazaakGame.PLAYER && payload.isStanding) || this.state.player.isStanding;
 
         // // response.move is 0 when the player is standing (PazaakCard.empty())
         // if (isStanding && !payload.move) {
@@ -184,16 +201,17 @@ class PazaakGame extends React.Component {
         //     payload.move = null;
         // }
 
-        const shouldWaitForUserInput = playerUpNext === PazaakGame.PLAYER && !this.state.player.isStanding;
+        const shouldWaitForUserInput = playerUpNext === PazaakGame.PLAYER && !isPlayerStanding;
 
         const updatedState = this._getEndTurnUpdatedState(payload, playerToUpdate);
         this.setState({
             ...updatedState,
             turn: playerUpNext,
             disableActionButtons: !shouldWaitForUserInput,
+            isNewGame: false,
         });
 
-        if (!shouldWaitForUserInput) {
+        if (!shouldWaitForUserInput && !gameOver) {
             this._getNextMove(playerUpNext);
         }
     }
@@ -214,7 +232,7 @@ class PazaakGame extends React.Component {
                 state = { opponent: playerData };
                 break;
             default:
-                console.error('invalid player argument passed to _updateSideFor');
+                console.error('invalid player argument passed to _getEndTurnUpdatedState');
         }
 
         return state;
@@ -236,12 +254,16 @@ class PazaakGame extends React.Component {
             },
             turn: PazaakGame.PLAYER,
             disableActionButtons: false,
+            isNewGame: true,
+            gameOver: {
+                value: false,
+            },
         };
     }
 
     _onStartOver() {
         const url = '/pazaak/api/new-game';
-        RequestService.get(url)
+        this._requestService.get(url)
             .then(this._newGame);
     }
 
@@ -257,8 +279,45 @@ class PazaakGame extends React.Component {
     _onStand(player) {
         const url = '/pazaak/api/stand';
         const payload = { action: `stand-${player}` };
-        RequestService.post(url, payload)
+        this._requestService.post(url, payload)
             .then(this._onReceiveEndTurnResponse);
+    }
+
+    _handleWinner(status) {
+        let gameOver = true;
+        let message;
+        switch (status.value) {
+            case 0:
+                // player wins
+                message = 'Player Wins!';
+                break;
+            case 1:
+                // opponent wins
+                message = 'Opponent Wins!';
+                break;
+            case 2:
+                // tie
+                message = 'Tie!';
+                break;
+            case 3:
+                // continue
+                gameOver = false;
+                break;
+            case 4:
+                // player forfeit
+                break;
+            default:
+                console.error(`unexpected GameStatus enum value "${status.value}" received`);
+        }
+
+        this.setState({
+            gameOver: {
+                value: gameOver,
+                message: message,
+            },
+        });
+
+        return gameOver;
     }
 }
 

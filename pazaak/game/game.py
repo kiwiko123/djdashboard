@@ -126,14 +126,16 @@ class PazaakGame(Serializable):
             status = self.winner()
 
         else:
+            previous_score = player.score
             player.placed.append(move)
             player.score += move.modifier
 
             if player.score == self._WINNING_SCORE:
                 player.stand()
+                status = self.winner()
 
             # ending a turn with a score over 20 is an automatic loss
-            if player.score > self._WINNING_SCORE:
+            if previous_score > self._WINNING_SCORE:
                 status = GameStatus.from_turn(opposite_turn)
             else:
                 status = self.winner()
@@ -258,7 +260,8 @@ class PazaakGame(Serializable):
 
     def _get_opponent_move(self) -> PazaakCard:
         card = None
-        card_needed_to_win = PazaakCard(self._WINNING_SCORE - self.opponent.score)
+        value_needed_to_win = self._WINNING_SCORE - self.opponent.score
+        card_needed_to_win = PazaakCard.empty() if value_needed_to_win == 0 else PazaakCard(self._WINNING_SCORE - self.opponent.score)
 
         if self.opponent.score == self._WINNING_SCORE or \
            (self.player.is_standing and self.player.score < self.opponent.score <= self._WINNING_SCORE):

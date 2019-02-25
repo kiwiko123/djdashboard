@@ -1,18 +1,19 @@
 
 
 class RequestService {
-	_base_url() {
-		return 'http://localhost:8000';
+
+	constructor(base_url) {
+		this._base_url = base_url
 	}
 
 	async get(url) {
-		url = `${this._base_url()}${url}/`;
+		url = `${this._base_url}${url}/`;
 		const response = await fetch(url);
 	  	return response.json();
 	}
 
 	async post(url, payload) {
-		url = `${this._base_url()}${url}/`;
+		url = `${this._base_url}${url}/`;
 		const params = {
 			method: 'POST',
 			headers: {
@@ -27,4 +28,4 @@ class RequestService {
 	}
 }
 
-export default new RequestService();
+export default RequestService;

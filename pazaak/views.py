@@ -14,7 +14,7 @@ class NewGameView(PazaakGameAPI):
         return '/api/new-game'
 
     @method_decorator(allow_cors)
-    def get(self, request: HttpRequest) -> JsonResponse:
+    def get(self, request: HttpRequest) -> HttpResponse:
         self.new_game()
         return JsonResponse({})
 
@@ -26,14 +26,9 @@ class EndTurnView(PazaakGameAPI):
         return '/api/end-turn'
 
     @method_decorator(allow_cors)
-    def post(self, request: HttpRequest) -> JsonResponse:
+    def post(self, request: HttpRequest) -> HttpResponse:
         payload = json.loads(request.body)
-
-        print('POST - EndTurnView')
-        print(payload)
-
         context = self.process_post(payload)
-        print('Context:', context)
         return JsonResponse(context)
 
 
@@ -44,10 +39,7 @@ class StandView(PazaakGameAPI):
         return '/api/stand'
 
     @method_decorator(allow_cors)
-    def post(self, request: HttpRequest) -> JsonResponse:
+    def post(self, request: HttpRequest) -> HttpResponse:
         payload = json.loads(request.body)
-
-        print('POST - StandView')
-
         context = self.process_post(payload)
         return JsonResponse(context)
