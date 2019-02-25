@@ -166,6 +166,10 @@ class PazaakGame(Serializable):
         return first_true(results, default=GameStatus.GAME_ON)
 
 
+    def _forfeited(self) -> GameStatus:
+        pass
+
+
     def _outscored(self) -> GameStatus:
         """
         Determines if any player has won by outscore.
@@ -311,6 +315,7 @@ class PazaakGame(Serializable):
             Turn.PLAYER: {
                 'score': self.player.score,
                 'hand': self.player.hand,
+                'placed': self.player.placed,
                 # 'last_placed': self.player.placed[-1].parity() if self.player.placed else 0,
                 'size': len(self.player.placed),
                 'is_standing': self.player.is_standing
@@ -318,6 +323,7 @@ class PazaakGame(Serializable):
             Turn.OPPONENT: {
                 'score': self.opponent.score,
                 'hand': list(self.opponent.hand),
+                'placed': self.opponent.placed,
                 # 'last_placed': self.opponent.placed[-1].parity() if self.opponent.placed else 0,
                 'size': len(self.opponent.placed),
                 'is_standing': self.opponent.is_standing

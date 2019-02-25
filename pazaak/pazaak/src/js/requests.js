@@ -6,7 +6,7 @@ class RequestService {
 	}
 
 	async get(url) {
-		url = this._base_url() + url;
+		url = `${this._base_url()}${url}/`;
 		const response = await fetch(url);
 	  	return response.json();
 	}

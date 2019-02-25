@@ -10,6 +10,7 @@ from pazaak.api.actions import Actions
 from pazaak.game import cards
 from pazaak.game.errors import GameLogicError, GameOverError
 from pazaak.game.game import PazaakGame, PazaakCard
+from pazaak.game.status import GameStatus
 from pazaak.game.turn import Turn
 from pazaak.helpers.bases import serialize
 from pazaak.helpers.utilities import allow_cors
@@ -32,9 +33,8 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
     def game(self):
         return PazaakGameAPI._game
 
-    def new_game(self):
+    def new_game(self) -> None:
         PazaakGameAPI._game = _init_game()
-        return self.game
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
@@ -63,31 +63,32 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
         action = payload['action']
         action = action.strip().lower()
-        context = {}
+        turn = None
+        move = None
 
         # player ends turn - the opponent makes a move now
         if action == Actions.END_TURN_PLAYER.value:
-            context = self._next_move(Turn.PLAYER)
+            turn = Turn.PLAYER
 
         # opponent ends turn - the player makes a move now
         elif action == Actions.END_TURN_OPPONENT.value:
-            context = self._next_move(Turn.OPPONENT)
+            turn = Turn.OPPONENT
 
         elif action == Actions.HAND_PLAYER.value:
             card_index = payload['card_index']
             assert card_index.isdigit(), 'expected numeric card index'
             card_index = int(card_index)
             move = self.game.choose_from_hand(self.game.player, card_index)
-            context = self._next_move(Turn.PLAYER, move=move)
+            turn = Turn.PLAYER
 
         elif action == Actions.STAND_PLAYER.value:
-            self.game.player.is_standing = True
-            context = self._next_move(Turn.PLAYER, make_move=False)
+            self.game.player.stand()
+            turn = Turn.PLAYER
 
         else:
-            context['error'] = 'Invalid response'
+            raise GameLogicError('invalid action "{0}" received from client'.format(action))
 
-        return context
+        return self._next_move(turn, move=move)
 
 
     def _next_move(self, turn: Turn, move=None) -> 'MoveInfo':
@@ -99,12 +100,16 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
                 move = PazaakCard.empty()
             elif move is None:
                 move = cards.random_card(positive_only=True, bound=self.game.max_modifier)
-        else:
+
+        elif turn == Turn.OPPONENT:
             player = self.game.opponent
             move = self.game._get_opponent_move()
 
+        else:
+            raise GameLogicError('invalid turn "{0}" received'.format(turn))
+
         context = {
-            'status': 'play',
+            'status': GameStatus.GAME_ON.value,   # TODO fix in serialize()
             'isStanding': player.is_standing,
             'move': move,
             'turn': {'justWent': self.game.turn}

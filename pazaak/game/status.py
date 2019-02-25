@@ -10,6 +10,7 @@ class GameStatus(SerializableEnum):
     OPPONENT_WINS = 1
     TIE = 2
     GAME_ON = 3
+    FORFEIT = 4
 
     def __bool__(self) -> bool:
         return self != self.GAME_ON

@@ -17,6 +17,7 @@ class PazaakPlayer(Serializable):
         self._is_standing = False
         self._placed = []
         self._identifier = identifier
+        self._forfeited = False
 
     def __str__(self) -> str:
         return 'PazaakPlayer({0})'.format(self.identifier)
@@ -51,8 +52,15 @@ class PazaakPlayer(Serializable):
     def identifier(self) -> str:
         return self._identifier
 
+    @property
+    def forfeited(self) -> bool:
+        return self._forfeited
+
     def stand(self) -> None:
         self._is_standing = True
+
+    def forfeit(self) -> None:
+        self._forfeited = True
 
     def key(self) -> str:
         raise GameLogicError('PazaakPlayer should not be a context key')
@@ -62,7 +70,7 @@ class PazaakPlayer(Serializable):
             'hand': list(self.hand),
             'placed': self.placed,
             'score': self.score,
-            'is_standing': self.is_standing,
+            'isStanding': self.is_standing,
             'identifier': self.identifier
         }
 

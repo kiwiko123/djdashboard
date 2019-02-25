@@ -1,15 +1,15 @@
 import random
 from django.http import HttpRequest, HttpResponse
-from .bases import Serializable
 
 
 class allow_cors:
     def __init__(self, method: callable):
         self._method = method
+        self._whitelisted_urls = 'http://localhost:3000'    # TODO (1) specify in decoration, (2) accept multiple
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         response = self._method(request)
-        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Origin'] = self._whitelisted_urls
         response['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS'
         response['Access-Control-Max-Age'] = 1000
         response['Access-Control-Allow-Headers'] = 'origin, x-csrftoken, content-type, accept'
