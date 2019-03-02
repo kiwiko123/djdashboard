@@ -41,9 +41,9 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
         return super().dispatch(request, *args, **kwargs)
 
 
-    @method_decorator(allow_cors)
-    def options(self, request: HttpRequest) -> HttpResponse:
-        return HttpResponse()
+    # @method_decorator(allow_cors)
+    # def options(self, request: HttpRequest) -> HttpResponse:
+    #     return HttpResponse()
 
 
     def process_post(self, payload: dict) -> dict:
@@ -110,7 +110,6 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
         context = {
             'status': GameStatus.GAME_ON.value,   # TODO fix in serialize()
-            'isStanding': player.is_standing,
             'move': move,
             'turn': {'justWent': self.game.turn}
         }

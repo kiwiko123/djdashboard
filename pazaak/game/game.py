@@ -132,7 +132,6 @@ class PazaakGame(Serializable):
 
             if player.score == self._WINNING_SCORE:
                 player.stand()
-                status = self.winner()
 
             # ending a turn with a score over 20 is an automatic loss
             if previous_score > self._WINNING_SCORE:
@@ -321,7 +320,7 @@ class PazaakGame(Serializable):
                 'placed': self.player.placed,
                 # 'last_placed': self.player.placed[-1].parity() if self.player.placed else 0,
                 'size': len(self.player.placed),
-                'is_standing': self.player.is_standing
+                'isStanding': self.player.is_standing
             },
             Turn.OPPONENT: {
                 'score': self.opponent.score,
@@ -329,7 +328,7 @@ class PazaakGame(Serializable):
                 'placed': self.opponent.placed,
                 # 'last_placed': self.opponent.placed[-1].parity() if self.opponent.placed else 0,
                 'size': len(self.opponent.placed),
-                'is_standing': self.opponent.is_standing
+                'isStanding': self.opponent.is_standing
             }
         }
 
