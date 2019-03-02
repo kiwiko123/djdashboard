@@ -37,6 +37,14 @@ class SerializableEnum(Serializable, enum.Enum, metaclass=_SerializableEnumMeta)
             'value': self.value
         }
 
+    @classmethod
+    def write_to_js(cls, outfile: open) -> None:
+        enum_name = cls.__name__
+        indentation = '    '
+        body = ['{0}{1}: {2},'.format(indentation, e.name, e.value) for e in cls]
+        lines = ['export const {0} = {{'.format(enum_name)] + body + ['};']
+        for line in lines:
+            outfile.write('{0}\n'.format(line))
 
 
 def serialize(payload) -> dict:
