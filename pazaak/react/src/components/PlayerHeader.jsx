@@ -4,6 +4,7 @@ import { classes } from '../js/util';
 
 import 'font-awesome/css/font-awesome.min.css';
 import '../styles/common.css';
+import '../styles/colors.css';
 import '../styles/PlayerHeader.css';
 
 
@@ -30,25 +31,23 @@ class PlayerHeader extends PureComponent {
     };
 
     render() {
-        let divClassName, playerLabel;
-        if (this.props.isPlayer) {
-            divClassName = 'column-left-border';
-            playerLabel = 'You';
-        } else {
-            divClassName = 'column-right-border';
-            playerLabel = 'Opponent';
-        }
-        const icon = this._getIcon();
+        const playerLabel = this.props.isPlayer ? 'You' : 'Opponent';
         const scoreLabel = `${playerLabel}: ${this.props.text}`;
-        divClassName = `PlayerHeader column ${divClassName}`;
+        const icon = this._getIcon();
+        const containerClassName = classes({
+            PlayerHeader: true,
+            column: true,
+            'column-left-border': this.props.isPlayer,
+            'column-right-border': !this.props.isPlayer,
+        });
 
         // TODO flash turn icon on switch
         return (
-            <div className={divClassName}>
+            <div className={containerClassName}>
                 <div className="icon-turn">
                     {icon}
                 </div>
-                <h2>{scoreLabel}</h2>
+                <h2 className="color-white">{scoreLabel}</h2>
             </div>
         );
     }
@@ -56,7 +55,8 @@ class PlayerHeader extends PureComponent {
     _getIcon() {
         const { gameOverData, hasCurrentTurn } = this.props;
         const iconClasses = classes({
-            'fas fa-trophy fa-3x': gameOverData.value && gameOverData.isWinner,
+            'color-white': !gameOverData.isWinner,
+            'fas fa-trophy fa-3x color-gold': gameOverData.value && gameOverData.isWinner,
             'fas fa-play-circle fa-3x': !gameOverData.value && hasCurrentTurn,
             'far fa-times-circle fa-3x': !gameOverData.value && !hasCurrentTurn,
         });

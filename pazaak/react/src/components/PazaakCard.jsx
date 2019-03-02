@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { classes } from '../js/util';
 
 import '../styles/common.css';
+import '../styles/colors.css';
 import '../styles/PazaakCard.css';
 
 
@@ -21,7 +22,9 @@ class PazaakCard extends React.PureComponent {
 
         return (
             <div className={cardClasses}>
-                {this.props.modifier}
+                <span className="color-black">
+                    {this.props.modifier}
+                </span>
             </div>
         );
     }

@@ -208,14 +208,14 @@ class PazaakGame extends React.Component {
 
         const playerToUpdate = payload.turn.justWent.value;
         const playerUpNext = payload.turn.upNext.value;
-        const isPlayerStanding = (playerToUpdate === PazaakGame.PLAYER && payload.isStanding) || this.state.player.isStanding;// }
+        const isPlayerStanding = (playerToUpdate === PazaakGame.PLAYER && payload.isStanding) || this.state.player.isStanding;
         const shouldWaitForUserInput = playerUpNext === PazaakGame.PLAYER && !isPlayerStanding;
 
         const updatedState = this._getEndTurnUpdatedState(payload, playerToUpdate);
         this.setState({
             ...updatedState,
             turn: playerUpNext,
-            disableActionButtons: !shouldWaitForUserInput,
+            disableActionButtons: isPlayerStanding || !shouldWaitForUserInput,
             isNewGame: false,
         });
 
