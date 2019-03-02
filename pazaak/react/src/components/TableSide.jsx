@@ -8,6 +8,17 @@ import '../styles/TableSide.css';
 
 
 class TableSide extends PureComponent {
+    static propTypes = {
+        isPlayer: PropTypes.bool,
+        placedCards: PropTypes.array,
+        handCards: PropTypes.array,
+        showHandCards: PropTypes.bool,
+    };
+
+    static defaultProps = {
+        showHandCards: true,
+    };
+
     render() {
         const columnClass = classes({
             column: true,
@@ -46,14 +57,4 @@ class TableSide extends PureComponent {
     }
 }
 
-TableSide.propTypes = {
-    isPlayer: PropTypes.bool,
-    placedCards: PropTypes.array,
-    handCards: PropTypes.array,
-    showHandCards: PropTypes.bool,
-};
-
-TableSide.defaultProps = {
-    showHandCards: true,
-};
 export default TableSide;

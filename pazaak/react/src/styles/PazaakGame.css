@@ -2,3 +2,16 @@
     margin-left: 2%;
     margin-right: 2%;
 }
+
+.GameHeader {
+    width: 100%;
+    text-align: center;
+}
+
+.info-header {
+    display: inline-block;
+}
+
+.text-align-left {
+    text-align: left;
+}

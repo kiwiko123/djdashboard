@@ -7,6 +7,31 @@ import '../styles/IconButton.css';
 
 
 class IconButton extends React.Component {
+    static propTypes = {
+        /* Typically, this will just be the button's text */
+        children: PropTypes.node,
+
+        /* React's Button variant - see https://react-bootstrap.github.io/components/buttons/ */
+        variant: PropTypes.string,
+
+        /* See https://fontawesome.com/icons */
+        fontAwesomeClassName: PropTypes.string,
+
+        disabled: PropTypes.bool,
+
+        /* Automatically disable the button after click.
+         * Button can be re-enabled by updating props.disabled to false.
+         */
+        disableOnClick: PropTypes.bool,
+
+        /* Show a spinner instead of the Font Awesome icon after clicking the button.
+         * The spinner will go away once props.disabled is false again.
+         */
+        showSpinnerOnClick: PropTypes.bool,
+
+        onClick: PropTypes.func.isRequired,
+    };
+
     constructor(props) {
         super(props);
         this._onClick = this._onClick.bind(this);
@@ -49,35 +74,8 @@ class IconButton extends React.Component {
             isLoading: this.props.showSpinnerOnClick,
             disabled: this.props.disabled || this.props.disableOnClick,
         });
-
-        if (this.props.onClick) {
-            this.props.onClick();
-        }
+        this.props.onClick();
     }
 }
 
-IconButton.propTypes = {
-    /* Typically, this will just be the button's text */
-    children: PropTypes.node,
-
-    /* React's Button variant - see https://react-bootstrap.github.io/components/buttons/ */
-    variant: PropTypes.string,
-
-    /* See https://fontawesome.com/icons */
-    fontAwesomeClassName: PropTypes.string,
-
-    disabled: PropTypes.bool,
-
-    /* Automatically disable the button after click.
-     * Button can be re-enabled by updating props.disabled to false.
-     */
-    disableOnClick: PropTypes.bool,
-
-    /* Show a spinner instead of the Font Awesome icon after clicking the button.
-     * The spinner will go away once props.disabled is false again.
-     */
-    showSpinnerOnClick: PropTypes.bool,
-
-    onClick: PropTypes.func,
-};
 export default IconButton;

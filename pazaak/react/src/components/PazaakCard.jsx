@@ -7,6 +7,11 @@ import '../styles/PazaakCard.css';
 
 
 class PazaakCard extends React.PureComponent {
+    static propTypes = {
+        modifier: PropTypes.string.isRequired,
+        isHandCard: PropTypes.bool,
+    };
+
     render() {
         const cardClasses = classes({
             'horizontal-row': true,
@@ -21,10 +26,5 @@ class PazaakCard extends React.PureComponent {
         );
     }
 }
-
-PazaakCard.propTypes = {
-    modifier: PropTypes.string.isRequired,
-    isHandCard: PropTypes.bool,
-};
 
 export default PazaakCard;

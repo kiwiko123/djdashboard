@@ -8,6 +8,27 @@ import '../styles/PlayerHeader.css';
 
 
 class PlayerHeader extends PureComponent {
+    static propTypes = {
+        text: PropTypes.oneOfType([
+            PropTypes.number,
+            PropTypes.string,
+        ]),
+        isPlayer: PropTypes.bool,
+        hasCurrentTurn: PropTypes.bool,
+        gameOverData: PropTypes.shape({
+            value: PropTypes.bool,
+            id: PropTypes.number,
+            isWinner: PropTypes.bool,
+        })
+    };
+
+    static defaultProps = {
+        gameOverData: {
+            value: false,
+            isWinner: false,
+        },
+    };
+
     render() {
         let divClassName, playerLabel;
         if (this.props.isPlayer) {
@@ -33,10 +54,11 @@ class PlayerHeader extends PureComponent {
     }
 
     _getIcon() {
-        const { hasCurrentTurn } = this.props;
+        const { gameOverData, hasCurrentTurn } = this.props;
         const iconClasses = classes({
-            'fas fa-play-circle fa-3x': hasCurrentTurn,
-            'far fa-times-circle fa-3x': !hasCurrentTurn,
+            'fas fa-trophy fa-3x': gameOverData.value && gameOverData.isWinner,
+            'fas fa-play-circle fa-3x': !gameOverData.value && hasCurrentTurn,
+            'far fa-times-circle fa-3x': !gameOverData.value && !hasCurrentTurn,
         });
 
         return (
@@ -45,12 +67,4 @@ class PlayerHeader extends PureComponent {
     }
 }
 
-PlayerHeader.propTypes = {
-    text: PropTypes.oneOfType([
-        PropTypes.number,
-        PropTypes.string,
-    ]),
-    isPlayer: PropTypes.bool,
-    hasCurrentTurn: PropTypes.bool,
-};
 export default PlayerHeader;
