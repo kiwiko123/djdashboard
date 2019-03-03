@@ -1,4 +1,4 @@
 # exclude garbage files
 __pycache__/
 .DS_Store
-*.pyc
+*.py[cod]

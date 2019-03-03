@@ -1,13 +1,41 @@
 import random
 
+from pazaak.game.errors import GameLogicError
+from pazaak.helpers.bases import Serializable
+from pazaak.helpers.utilities import coin_flip
 
-class PazaakCard:
+
+class PazaakCard(Serializable):
+    __id = 0
+    __EMPTY_VALUE = 0
+    __initializing_empty = False
+
+    @classmethod
+    def empty(cls) -> 'PazaakCard':
+        cls.__initializing_empty = True
+        card = cls(cls.__EMPTY_VALUE)
+        cls.__initializing_empty = False
+        return card
+
+    @classmethod
+    def _generate_id(cls) -> int:
+        """
+        Returns and increments a static ID number.
+        Used for hashing PazaakCards.
+        """
+        result = cls.__id
+        cls.__id += 1
+        return result
+
     def __init__(self, modifier: int):
         """
         Initialize a new Pazaak card.
         Modifier is the value to add/subtract to the player's score.
         """
+        if modifier == PazaakCard.__EMPTY_VALUE and not PazaakCard.__initializing_empty:
+            raise ValueError('cannot initialize a PazaakCard with the empty card value ({0})'.format(modifier))
         self._modifier = modifier
+        self._id = PazaakCard._generate_id()
 
     def __repr__(self) -> str:
         return '{0}({1})'.format(type(self).__name__, self.parity())
@@ -15,8 +43,11 @@ class PazaakCard:
     def __str__(self) -> str:
         return repr(self)
 
+    def __bool__(self) -> bool:
+        return bool(self.modifier)
+
     def __hash__(self) -> int:
-        return hash(str(self))
+        return self._id
 
     def __eq__(self, other: 'PazaakCard') -> bool:
         return isinstance(other, PazaakCard) and self.modifier == other.modifier
@@ -27,13 +58,33 @@ class PazaakCard:
 
     def parity(self) -> str:
         p = '+' if self.modifier > 0 else ''
-
         return '{0}{1}'.format(p, self.modifier)
+
+    def key(self) -> str:
+        raise GameLogicError('PazaakCard should not be a context key')
+
+    def context(self) -> dict:
+        return {
+            'modifier': self.modifier,
+            'parity': self.parity()
+        }
 
 
 def random_card(positive_only=True, bound=10) -> PazaakCard:
-    lower_bound = 1 if positive_only else -bound
-    return PazaakCard(random.randrange(lower_bound, bound + 1))
+    """
+    Returns a random card within the provided bound.
+    If positive_only=True, the range is [1, bound].
+    If not, the range is [-bound, -1] U [1, bound].
+    """
+    value = None
+    if positive_only:
+        value = random.randrange(1, bound + 1)
+    else:
+        negative_value = random.randrange(-bound, 0)
+        positive_value = random.randrange(1, bound + 1)
+        value = positive_value if coin_flip() else negative_value
+
+    return PazaakCard(value)
 
 
 def random_cards(n: int, positive_only=True, bound=10) -> [PazaakCard]:
