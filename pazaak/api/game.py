@@ -17,6 +17,14 @@ def _init_game() -> PazaakGame:
 
 
 class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMeta):
+    """
+    Intermediate class encapsulating common data for each View endpoint (in views.py).
+    To support simultaneous games, PazaakGameAPI stores a static collection of all currently-ongoing games.
+    Starting a new game generates a unique ID, which is persisted throughout all web requests made by the client.
+    Upon receiving a request, the server verifies that the ID is valid, then retrieves the game mapped to that ID.
+
+    Each View must be derived from PazaakGameAPI to maintain state.
+    """
     PLAYER_TAG = 'player'
     OPPONENT_TAG = 'opponent'
     _games = {}
@@ -24,14 +32,20 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
 
     @classmethod
-    def get_game(cls, game_id: int) -> PazaakGame:
+    def retrieve_game(cls, game_id: int) -> PazaakGame:
+        """
+        Returns the game associated with the given ID.
+        """
         if game_id not in cls._games:
-            raise GameLogicError('Unknown game received')
+            raise ValueError('Unknown game received')
         return cls._games[game_id]
 
 
     @classmethod
     def new_game(cls) -> None:
+        """
+        Creates a new game and returns the generated ID associated to it.
+        """
         new_game_id = cls._post_increment_game_id()
         cls._games[new_game_id] = _init_game()
         return new_game_id
@@ -39,12 +53,19 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
     @classmethod
     def remove_game(cls, game_id: int) -> None:
+        """
+        Deletes the game associated to the given ID.
+        Call this when manually starting a game over.
+        """
         if game_id in cls._games:
             del cls._games[game_id]
 
 
     @classmethod
     def _post_increment_game_id(cls) -> int:
+        """
+        Generates and returns a new game ID.
+        """
         game_id = cls._game_id
         cls._game_id += 1
         return game_id
@@ -52,15 +73,22 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
+        """
+        The sole purpose of this override is to remove all CSRF requirements on requests.
+        This may not be suitable if Pazaak is ever used in a production environment.
+        """
         return super().dispatch(request, *args, **kwargs)
 
 
-    # @method_decorator(allow_cors)
-    # def options(self, request: HttpRequest) -> HttpResponse:
-    #     return HttpResponse()
-
-
     def process_post(self, payload: dict) -> dict:
+        """
+        Entry point for all View requests.
+        The payload should always contain 2 things:
+          1) the unique game ID.
+          2) the action being taken.
+
+        Based on the action, updates the state of the game and returns the relevant JSON response as a dictionary.
+        """
         game = self._get_game_from_payload(payload)
         context = self._process_player_move(game, payload)
         content = game.json()
@@ -144,4 +172,4 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
         if key not in payload:
             raise ValueError('Front-end did not send up a game ID')
         game_id = payload[key]
-        return cls.get_game(game_id)
+        return cls.retrieve_game(game_id)

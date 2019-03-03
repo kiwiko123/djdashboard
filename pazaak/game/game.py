@@ -224,6 +224,10 @@ class PazaakGame(Serializable):
 
 
     def _get_player_move(self) -> PazaakCard:
+        """
+        Prompts the player for their next move.
+        Applies to the console-based game only.
+        """
         prompt = ''
         if self.player.hand:
             cards_in_hand = len(self.player.hand)
@@ -257,12 +261,22 @@ class PazaakGame(Serializable):
 
 
     def _get_opponent_move(self) -> PazaakCard:
+        """
+        Returns the opponent's next move.
+        There's some limited intelligence here:
+        1) if their score is higher than the player's score (but under 20), AND the player is standing,
+           then the opponent will stand (causing the them to win).
+        2) if the opponent has a card in their hand that, when played, will get their score to 20,
+           then they'll play it.
+
+        Otherwise, they'll just draw a random card.
+        """
         card = None
         value_needed_to_win = self._WINNING_SCORE - self.opponent.score
         card_needed_to_win = PazaakCard.empty() if value_needed_to_win == 0 else PazaakCard(self._WINNING_SCORE - self.opponent.score)
+        player_stood_too_early = self.player.is_standing and self.player.score < self.opponent.score <= self._WINNING_SCORE
 
-        if self.opponent.score == self._WINNING_SCORE or \
-           (self.player.is_standing and self.player.score < self.opponent.score <= self._WINNING_SCORE):
+        if self.opponent.score == self._WINNING_SCORE or player_stood_too_early:
             self.opponent.stand()
             card = PazaakCard.empty()
 
@@ -301,10 +315,6 @@ class PazaakGame(Serializable):
         """
         return random.sample(pool, self._hand_size)
 
-
-    def _is_tied(self) -> bool:
-        return (self.player.score == self._WINNING_SCORE and self.player.score == self.opponent.score) or \
-               (self.player.score > self._WINNING_SCORE and self.opponent.score > self._WINNING_SCORE)
 
 
     def key(self) -> str:

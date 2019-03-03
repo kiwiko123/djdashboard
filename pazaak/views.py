@@ -15,7 +15,7 @@ class NewGameView(PazaakGameAPI):
     @method_decorator(allow_cors)
     def get(self, request: HttpRequest) -> HttpResponse:
         game_id = self.new_game()
-        game = self.get_game(game_id)
+        game = self.retrieve_game(game_id)
         context = game.json()
         context['gameId'] = game_id
         return JsonResponse(context)

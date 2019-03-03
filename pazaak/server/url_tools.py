@@ -25,7 +25,7 @@ class ViewURLAutoParser(metaclass=abc.ABCMeta):
     @classmethod
     def regex_url(cls) -> str:
         """
-        Returns the formatted regular expression URL required by Django's url function.
+        Returns the formatted regular expression URL required by Django's url() function.
         Do not override this.
         """
         url = cls.url()
@@ -54,12 +54,11 @@ class ViewURLAutoParser(metaclass=abc.ABCMeta):
 
 def url_patterns(module) -> [url]:
     """
-    Scans module for classes derived from ViewURLAutoParser that have implemented the url() class method.
+    Scans module for classes derived from ViewURLAutoParser that have implemented the @classmethod url().
     Returns an auto-generated list of Django URL patterns required by the app's top-level urls.py.
+    Call this method on the views module (views.py).
     """
-    predicate = lambda cls: inspect.isclass(cls) \
-                        and ViewURLAutoParser in inspect.getmro(cls) \
-                        and cls.url()
+    predicate = lambda cls: inspect.isclass(cls) and issubclass(cls, ViewURLAutoParser)
     return [url(cls.regex_url(), cls.as_view(), name=cls.name()) for _, cls in inspect.getmembers(module, predicate=predicate)]
 
 
