@@ -3,6 +3,8 @@ from django.http import HttpRequest, HttpResponse
 
 
 class allow_cors:
+    # TODO specify whitelisted URLs in decorator arguments
+
     def __init__(self, method: callable):
         self._method = method
         self._whitelisted_urls = 'http://localhost:3000'    # TODO (1) specify in decoration, (2) accept multiple

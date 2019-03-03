@@ -88,6 +88,13 @@ class GameStatus(SerializableEnum):
 # ======================================
 
 def export_enums_to_js(write_file: pathlib.Path):
+    """
+    Automatically generate a JS class representing enums in this module.
+    Generated enums must be derived from SerializableEnum,
+    and must override the @classmethod export_to_js() to return True.
+
+    Generation happens at server startup, in pazaak/apps.py.
+    """
     enums_to_serialize = _get_classes_in_current_module(_should_serialize_to_js)
     with write_file.open('w') as outfile:
         header = [
@@ -100,14 +107,14 @@ def export_enums_to_js(write_file: pathlib.Path):
         outfile.write('\n\n')
 
         for enum_class in enums_to_serialize:
-            write_enum_as_js_class(enum_class, outfile)
+            _write_enum_as_js_class(enum_class, outfile)
             outfile.write('\n')
 
 
-def write_enum_as_js_class(cls: SerializableEnum, outfile: open) -> None:
+def _write_enum_as_js_class(cls: SerializableEnum, outfile: open) -> None:
     enum_name = cls.__name__
-    if not cls.export_to_js:
-        raise ValueError('set {0}.export_to_js to True'.format(enum_name))
+    if not cls.export_to_js():
+        raise ValueError('override export_to_js() to return True'.format(enum_name))
 
     indentation = '    '
     body = ['{0}{1}: {2},'.format(indentation, e.name, _transform_enum_value(e)) for e in cls]
@@ -121,11 +128,16 @@ def _should_serialize_to_js(member) -> bool:
        and issubclass(member, SerializableEnum) \
        and member.export_to_js()
 
+
 def _transform_enum_value(enum_value: enum.Enum):
+    """
+    If the enum's value is a string, include quotes around it.
+    """
     value = enum_value.value
     if type(value) is str:
         value = "'{0}'".format(value)
     return value
+
 
 def _get_classes_in_current_module(predicate: callable) -> list:
     if __name__ not in sys.modules:
