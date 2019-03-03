@@ -19,18 +19,36 @@ def _init_game() -> PazaakGame:
 class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMeta):
     PLAYER_TAG = 'player'
     OPPONENT_TAG = 'opponent'
-    _game = _init_game()
+    _games = {}
+    _game_id = 0
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._game = _init_game()
 
-    @property
-    def game(self):
-        return PazaakGameAPI._game
+    @classmethod
+    def get_game(cls, game_id: int) -> PazaakGame:
+        if game_id not in cls._games:
+            raise GameLogicError('Unknown game received')
+        return cls._games[game_id]
 
-    def new_game(self) -> None:
-        PazaakGameAPI._game = _init_game()
+
+    @classmethod
+    def new_game(cls) -> None:
+        new_game_id = cls._post_increment_game_id()
+        cls._games[new_game_id] = _init_game()
+        return new_game_id
+
+
+    @classmethod
+    def remove_game(cls, game_id: int) -> None:
+        if game_id in cls._games:
+            del cls._games[game_id]
+
+
+    @classmethod
+    def _post_increment_game_id(cls) -> int:
+        game_id = cls._game_id
+        cls._game_id += 1
+        return game_id
+
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
@@ -43,8 +61,9 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
 
     def process_post(self, payload: dict) -> dict:
-        context = self._process_player_move(payload)
-        content = self.game.json()
+        game = self._get_game_from_payload(payload)
+        context = self._process_player_move(game, payload)
+        content = game.json()
         turn = context['turn']['justWent']['value']
         if turn not in content:
             raise GameLogicError('expected turn to be one of ("player", "opponent")')
@@ -53,7 +72,7 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
         return context
 
 
-    def _process_player_move(self, payload: dict) -> dict:
+    def _process_player_move(self, game: PazaakGame, payload: dict) -> dict:
         if Actions.ACTION.value not in payload:
             raise GameLogicError('did not receive "action" from payload')
 
@@ -73,32 +92,32 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
         elif action == Actions.HAND_PLAYER.value:
             card_index = payload['cardIndex']
             assert type(card_index) is int
-            move = self.game.choose_from_hand(self.game.player, card_index)
+            move = game.choose_from_hand(game.player, card_index)
             turn = Turn.PLAYER
 
         elif action == Actions.STAND_PLAYER.value:
-            self.game.player.stand()
+            game.player.stand()
             turn = Turn.PLAYER
 
         else:
             raise GameLogicError('invalid action "{0}" received from client'.format(action))
 
-        return self._next_move(turn, move=move)
+        return self._next_move(game, turn, move=move)
 
 
-    def _next_move(self, turn: Turn, move=None) -> 'MoveInfo':
+    def _next_move(self, game: PazaakGame, turn: Turn, move=None) -> 'MoveInfo':
         player = None
 
         if turn == Turn.PLAYER:
-            player = self.game.player
-            if self.game.player.is_standing:
+            player = game.player
+            if game.player.is_standing:
                 move = PazaakCard.empty()
             elif move is None:
-                move = cards.random_card(positive_only=True, bound=self.game.max_modifier)
+                move = cards.random_card(positive_only=True, bound=game.max_modifier)
 
         elif turn == Turn.OPPONENT:
-            player = self.game.opponent
-            move = self.game._get_opponent_move()
+            player = game.opponent
+            move = game._get_opponent_move()
 
         else:
             raise GameLogicError('invalid turn "{0}" received'.format(turn))
@@ -106,30 +125,23 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
         context = {
             'status': GameStatus.GAME_ON.value,   # TODO fix in serialize()
             'move': move,
-            'turn': {'justWent': self.game.turn}
+            'turn': {'justWent': game.turn}
         }
 
         if move is not None:
             try:
-                context['status'] = self.game.end_turn(turn, move)
+                context['status'] = game.end_turn(turn, move)
             except GameOverError as e:
                 context['status'] = str(e)
 
-        context['turn']['upNext'] = self.game.turn
+        context['turn']['upNext'] = game.turn
         return serialize(context)
 
 
-    def _process_game_over(self) -> dict:
-        winner_code = self.game.winner()
-        assert winner_code != self.game.GAME_ON, 'game is not over'
-
-        switch = {
-            self.game.PLAYER_WINS: Turn.PLAYER.value,
-            self.game.OPPONENT_WINS: Turn.OPPONENT.value,
-            self.game.TIE: 'tie'
-        }
-
-        return {
-            'status': 'game_over',
-            'winner': switch[winner_code]
-        }
+    @classmethod
+    def _get_game_from_payload(cls, payload: dict) -> PazaakGame:
+        key = 'gameId'
+        if key not in payload:
+            raise ValueError('Front-end did not send up a game ID')
+        game_id = payload[key]
+        return cls.get_game(game_id)

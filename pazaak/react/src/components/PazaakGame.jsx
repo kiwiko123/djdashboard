@@ -23,7 +23,7 @@ class PazaakGame extends React.Component {
         this._onClickHandCard = this._onClickHandCard.bind(this);
         this._onReceiveEndTurnResponse = this._onReceiveEndTurnResponse.bind(this);
         this._onEndTurnHandler = this._onEndTurnHandler.bind(this);
-        this._onNewGame = this._onNewGame.bind(this);
+        this._onClickStartOver = this._onClickStartOver.bind(this);
         this._newGame = this._newGame.bind(this);
 
         this.state = this._getInitialState();
@@ -31,7 +31,7 @@ class PazaakGame extends React.Component {
     }
 
     componentDidMount() {
-        this._onNewGame();
+        this._onFirstLoad();
     }
 
     render() {
@@ -168,7 +168,7 @@ class PazaakGame extends React.Component {
                     fontAwesomeClassName="fas fa-redo"
                     disableOnClick={true}
                     showSpinnerOnClick={true}
-                    onClick={this._onNewGame}
+                    onClick={this._onClickStartOver}
                 >
                     Start Over
                 </IconButton>
@@ -278,14 +278,22 @@ class PazaakGame extends React.Component {
         };
     }
 
-    _onNewGame() {
+    _onFirstLoad() {
         const url = '/pazaak/api/new-game';
         this._requestService.get(url)
             .then(this._newGame);
     }
 
+    _onClickStartOver() {
+        const url = '/pazaak/api/new-game';
+        this._requestService.post(url)
+            .then(this._newGame);
+    }
+
     _newGame(payload) {
         const initialState = this._getInitialState();
+        const gameId = payload.gameId;
+        this._requestService.setPersistentPayload({ gameId });
         this.setState({
             ...initialState,
             ...payload,

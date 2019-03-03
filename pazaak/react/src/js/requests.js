@@ -3,8 +3,13 @@ import { endsWith, startsWith } from 'lodash';
 
 class RequestService {
 
-	constructor(base_url) {
+	constructor(base_url, persistentPayload) {
 		this._base_url = base_url
+		this._persistentPayload = persistentPayload;
+	}
+
+	setPersistentPayload(payload) {
+		this._persistentPayload = payload;
 	}
 
 	async get(url) {
@@ -15,6 +20,7 @@ class RequestService {
 
 	async post(url, payload) {
 		url = this._normalize_url(url);
+		payload = this._get_persistent_payload(payload);
 		const params = {
 			method: 'POST',
 			headers: {
@@ -36,6 +42,14 @@ class RequestService {
 		}
 
 		return `${this._base_url}${url}`;
+	}
+
+	_get_persistent_payload(payload) {
+		payload = payload || {};
+		return {
+			...this._persistentPayload,
+			...payload,
+		};
 	}
 }
 

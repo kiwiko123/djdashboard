@@ -14,9 +14,19 @@ class NewGameView(PazaakGameAPI):
 
     @method_decorator(allow_cors)
     def get(self, request: HttpRequest) -> HttpResponse:
-        self.new_game()
-        context = self.game.json()
+        game_id = self.new_game()
+        game = self.get_game(game_id)
+        context = game.json()
+        context['gameId'] = game_id
         return JsonResponse(context)
+
+    @method_decorator(allow_cors)
+    def post(self, request: HttpRequest) -> HttpResponse:
+        payload = json.loads(request.body)
+        if 'gameId' in payload:
+            game_id = payload['gameId']
+            self.remove_game(game_id)
+        return self.get(request)
 
 
 class EndTurnView(PazaakGameAPI):
