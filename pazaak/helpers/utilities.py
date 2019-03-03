@@ -30,4 +30,4 @@ def coin_flip() -> bool:
     """
     Randomly returns True or False.
     """
-    return random.randrange(1) == 0
+    return random.randrange(2) == 0

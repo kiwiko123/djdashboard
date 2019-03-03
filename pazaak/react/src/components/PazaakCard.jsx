@@ -7,23 +7,52 @@ import '../styles/colors.css';
 import '../styles/PazaakCard.css';
 
 
-class PazaakCard extends React.PureComponent {
+class PazaakCard extends React.Component {
     static propTypes = {
-        modifier: PropTypes.string.isRequired,
-        isHandCard: PropTypes.bool,
+        /** Equivalent to the 'parity' in the code.
+         *  Consists of the '+'/'-' and the numeric value.
+         *  e.g., '+5'
+         */
+        displayModifier: PropTypes.string.isRequired,
+        index: PropTypes.number.isRequired,
+        handData: PropTypes.shape({
+            isHandCard: PropTypes.bool,
+            showValue: PropTypes.bool,
+            onClick: PropTypes.func,
+        }),
     };
 
+    static defaultProps = {
+        handData: {
+            isHandCard: false,
+        },
+    };
+
+    constructor(props) {
+        super(props);
+        this._onClickHandCard = this._onClickHandCard.bind(this);
+    }
+
+    _onClickHandCard() {
+        const { handData } = this.props;
+        if (handData.isHandCard && handData.onClick) {
+            handData.onClick(this.props.index);
+        }
+    }
+
     render() {
+        const { handData } = this.props;
         const cardClasses = classes({
             'horizontal-row': true,
             'pazaak-card': true,
-            'hand-card': this.props.isHandCard,
+            'hand-card': handData.isHandCard,
         });
+        const modifier = (!handData.isHandCard || handData.showValue) && this.props.displayModifier;
 
         return (
-            <div className={cardClasses}>
+            <div className={cardClasses} onClick={this._onClickHandCard}>
                 <span className="color-black">
-                    {this.props.modifier}
+                    {modifier}
                 </span>
             </div>
         );

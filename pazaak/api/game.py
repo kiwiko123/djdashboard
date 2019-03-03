@@ -1,23 +1,19 @@
 import abc
 
-from django.http import HttpRequest, HttpResponse
 from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 
 from pazaak.server.url_tools import ViewURLAutoParser
-from pazaak.api.actions import Actions
+from pazaak.enums import Actions, GameStatus, Turn
 from pazaak.game import cards
 from pazaak.game.errors import GameLogicError, GameOverError
 from pazaak.game.game import PazaakGame, PazaakCard
-from pazaak.game.status import GameStatus
-from pazaak.game.turn import Turn
 from pazaak.helpers.bases import serialize
-from pazaak.helpers.utilities import allow_cors
 
 
 def _init_game() -> PazaakGame:
-    return PazaakGame(cards.random_cards(4, positive_only=False))
+    return PazaakGame(cards.random_cards(4, positive_only=False, bound=5))
 
 
 class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMeta):
@@ -58,7 +54,7 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
 
 
     def _process_player_move(self, payload: dict) -> dict:
-        if 'action' not in payload:
+        if Actions.ACTION.value not in payload:
             raise GameLogicError('did not receive "action" from payload')
 
         action = payload['action']
@@ -75,9 +71,8 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
             turn = Turn.OPPONENT
 
         elif action == Actions.HAND_PLAYER.value:
-            card_index = payload['card_index']
-            assert card_index.isdigit(), 'expected numeric card index'
-            card_index = int(card_index)
+            card_index = payload['cardIndex']
+            assert type(card_index) is int
             move = self.game.choose_from_hand(self.game.player, card_index)
             turn = Turn.PLAYER
 

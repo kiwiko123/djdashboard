@@ -8,7 +8,6 @@ from pazaak.helpers.utilities import allow_cors
 
 
 class NewGameView(PazaakGameAPI):
-
     @classmethod
     def url(cls) -> str:
         return '/api/new-game'
@@ -16,11 +15,11 @@ class NewGameView(PazaakGameAPI):
     @method_decorator(allow_cors)
     def get(self, request: HttpRequest) -> HttpResponse:
         self.new_game()
-        return JsonResponse({})
+        context = self.game.json()
+        return JsonResponse(context)
 
 
 class EndTurnView(PazaakGameAPI):
-
     @classmethod
     def url(cls) -> str:
         return '/api/end-turn'
@@ -33,10 +32,21 @@ class EndTurnView(PazaakGameAPI):
 
 
 class StandView(PazaakGameAPI):
-
     @classmethod
     def url(cls) -> str:
         return '/api/stand'
+
+    @method_decorator(allow_cors)
+    def post(self, request: HttpRequest) -> HttpResponse:
+        payload = json.loads(request.body)
+        context = self.process_post(payload)
+        return JsonResponse(context)
+
+
+class SelectHandCardView(PazaakGameAPI):
+    @classmethod
+    def url(cls) -> str:
+        return '/api/select-hand-card'
 
     @method_decorator(allow_cors)
     def post(self, request: HttpRequest) -> HttpResponse:

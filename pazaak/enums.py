@@ -10,6 +10,7 @@ from pazaak.helpers.bases import SerializableEnum
 
 @enum.unique
 class Actions(SerializableEnum):
+    ACTION = 'action'
     END_TURN_PLAYER = 'end-turn-player'
     END_TURN_OPPONENT = 'end-turn-opponent'
     HAND_PLAYER = 'hand-player'

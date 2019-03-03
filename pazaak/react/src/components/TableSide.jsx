@@ -10,14 +10,48 @@ import '../styles/TableSide.css';
 class TableSide extends PureComponent {
     static propTypes = {
         isPlayer: PropTypes.bool,
-        placedCards: PropTypes.array,
-        handCards: PropTypes.array,
+        placedCards: PropTypes.arrayOf(
+            PropTypes.shape({
+                modifier: PropTypes.number,
+                parity: PropTypes.string,
+            }),
+        ).isRequired,
+        handCards: PropTypes.arrayOf(
+            PropTypes.shape({
+                modifier: PropTypes.number,
+                parity: PropTypes.string,
+            }),
+        ),
         showHandCards: PropTypes.bool,
+        onClickHandCard: PropTypes.func,
     };
 
     static defaultProps = {
         showHandCards: true,
+        placedCards: [],
+        handCards: [],
     };
+
+    _getCard(card, index, isHandCard) {
+        const handData = {
+            isHandCard,
+            showValue: this.props.showHandCards,
+            onClick: this.props.onClickHandCard,
+        };
+
+        return (
+            <PazaakCard
+                key={index}
+                index={index}
+                displayModifier={card.parity}
+                handData={handData}
+            />
+        );
+    }
+
+    _getCards(cards, isHandCard) {
+        return cards.map((card, index) => this._getCard(card, index, isHandCard));
+    }
 
     render() {
         const columnClass = classes({
@@ -25,7 +59,7 @@ class TableSide extends PureComponent {
             columnLeftBorder: this.props.isPlayer,
         });
         const placedCards = this._getCards(this.props.placedCards, false);
-        const handCards = this.props.showHandCards && this._getCards(this.props.handCards, true);
+        const handCards = this._getCards(this.props.handCards, true);
 
         return (
             <div className="TableSide full-width">
@@ -42,18 +76,6 @@ class TableSide extends PureComponent {
                 </div>
             </div>
         );
-    }
-
-    _getCards(cards, isHand) {
-        return cards && cards.map((card, index) => {
-            return (
-                <PazaakCard
-                    key={index}
-                    modifier={card}
-                    isHandCard={isHand}
-                />
-            );
-        });
     }
 }
 

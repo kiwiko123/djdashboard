@@ -9,6 +9,7 @@ import RequestService from '../js/requests';
 import { Actions, GameStatus, Players } from '../js/enums';
 
 import '../styles/common.css';
+import '../styles/colors.css';
 import '../styles/PazaakGame.css';
 
 
@@ -103,7 +104,7 @@ class PazaakGame extends React.Component {
 
     _getGameOverBanner() {
         return this.state.gameOver.value && (
-            <h1>
+            <h1 className="color-white">
                 {this.state.gameOver.message}
             </h1>
         );
@@ -156,7 +157,7 @@ class PazaakGame extends React.Component {
                     fontAwesomeClassName="fas fa-arrow-up"
                     disableOnClick={true}
                     showSpinnerOnClick={showSpinner}
-                    disabled={disableActionButtons || this.state.player.isStanding}
+                    disabled={disableActionButtons}
                     onClick={this._onClickStand}
                 >
                     Stand
@@ -187,7 +188,7 @@ class PazaakGame extends React.Component {
         const payload = {
             action: action,
             turn: player,
-            gameId: this.state.gameId,
+            // gameId: this.state.gameId,
         };
 
         this._requestService.post(url, payload)
@@ -199,6 +200,7 @@ class PazaakGame extends React.Component {
      * @private
      */
     _onClickEndTurn() {
+        this.setState({ disableActionButtons: true });
         this._getNextMove(Players.PLAYER)
     }
 
@@ -220,7 +222,7 @@ class PazaakGame extends React.Component {
         this.setState({
             ...updatedState,
             turn: playerUpNext,
-            disableActionButtons: isPlayerStanding || !shouldWaitForUserInput,
+            disableActionButtons: !shouldWaitForUserInput,
             isNewGame: false,
         });
 
@@ -232,7 +234,8 @@ class PazaakGame extends React.Component {
     _getEndTurnUpdatedState(payload, player) {
         const playerData = {
             score: payload.score,
-            placed: payload.placed.map(card => card.parity),
+            placed: payload.placed,
+            hand: payload.hand,
             isStanding: payload.isStanding,
         };
         let state = {};
@@ -276,10 +279,9 @@ class PazaakGame extends React.Component {
     }
 
     _onNewGame() {
-        this.setState(this._getInitialState());
-        // const url = '/pazaak/api/new-game';
-        // this._requestService.get(url)
-        //     .then(this._newGame);
+        const url = '/pazaak/api/new-game';
+        this._requestService.get(url)
+            .then(this._newGame);
     }
 
     _newGame(payload) {
@@ -291,6 +293,7 @@ class PazaakGame extends React.Component {
     }
 
     _onClickStand() {
+        this.setState({ disableActionButtons: true });
         const url = '/pazaak/api/stand';
         const payload = { action: Actions.STAND_PLAYER };
         this._requestService.post(url, payload)
@@ -299,7 +302,10 @@ class PazaakGame extends React.Component {
 
     _onClickHandCard(index) {
         const url = '/pazaak/api/select-hand-card';
-        const payload = { index };
+        const payload = {
+            cardIndex: index,
+            action: Actions.HAND_PLAYER,
+        };
         return this._requestService.post(url, payload)
             .then(this._onReceiveEndTurnResponse);
     }
