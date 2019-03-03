@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+
+{% extends "flick/base.html" %}
+{% load static %}
+
+<html lang="en">
+
+    {% block head %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.12/css/all.css" integrity="sha384-G0fIWCsCzJIMAVNQPfjH08cyYaUtMwjJwqiRKxxE/rx96Uroj1BtIQ6MLJuheaO9" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{% static 'flick/css/light-controller.css' %}">
+    {% endblock %}
+
+	{% block body %}
+    <div id="lights-container">
+        <div id="header-button-container" class="header-button">
+            <button type="button" class="btn btn-info" id="btn-refresh" data-url="{% url 'flick:light-controller' %}"><i id="btn-refresh-span" class="fas fa-sync"></i> Refresh</button>
+        </div>
+        <ul class="no-bullets" id="lights-list">
+            {% for light in lights %}
+            <div id="light-container-{{ forloop.counter }}">
+                <button type="button" class="btn btn-default" data-url="{% url 'flick:light-controller' %}" data-number="{{ light.number }}"><i id="btn-light-span-{{ light.number }}" class="fas fa-2x"></i></button>
+                <li class="same-line" id="light-{{ light.uniqueid }}" data-url="{% url 'flick:light-controller' %}">{{ light.name }}</li>
+            </div>
+            {% endfor %}
+        </ul>
+    </div>
+	{% endblock %}
+
+    {% block script %}
+    <script type="text/javascript">
+        function _revertRefreshButton() {
+            $("#btn-refresh").toggleClass("btn-success btn-info");
+            $("#btn-refresh-span").toggleClass("fa-check fa-sync");
+        }
+
+        function _confirmRefreshButton() {
+            $("#btn-refresh").toggleClass("btn-info btn-success");
+            $("#btn-refresh-span").removeClass("fa-spin");
+            $("#btn-refresh-span").toggleClass("fa-check fa-sync")
+        }
+
+        /*
+         * Temporarily (for half a second) turns the refresh button green (bootstrap class "btn-success"),
+         * and the icon to a checkmark (font-awesome class "fa-check").
+         * Reverts after 2 seconds.
+         * Refreshes the light toggles with initLightButtons().
+         */
+        function refreshButtonSuccess() {
+            setTimeout(_confirmRefreshButton, 500);
+            setTimeout(_revertRefreshButton, 2000);
+            initLightButtons();
+        }
+
+        /*
+         * Prepares the refresh button's functionality.
+         * When clicked, sends a POST request as:
+         *   {'command': 'refresh'}
+         * The refresh icon begins spinning to indicate progress.
+         * Upon success, temporarily provides a visual indication on the refresh button to indicate completion.
+         * Refreshes the light toggles with initLightButtons().
+         */
+        function bindRefreshButton() {
+            $("#btn-refresh").click(function(e) {
+                e.preventDefault();
+                $("#btn-refresh-span").addClass("fa-spin");
+                $.ajax({
+                    type: "POST",
+                    url: $(this).data("url"),
+                    data: {
+                        command: "refresh"
+                    },
+                    success: refreshButtonSuccess
+                });
+            });
+        }
+
+        /*
+         * Prepares each light's toggle-button functionality.
+         * Clicking the toggle sends POST request as {'command': 'toggle', 'number': <light-number>}.
+         * Upon success, updates the toggle to reflect the light's new state.
+         */
+        function bindLightButtons() {
+            $("#lights-list button").each(function(index, button) {
+                $(button).click(function(e) {
+                    e.preventDefault();
+                    $.ajax({
+                        type: "POST",
+                        url: $(this).data("url"),
+                        data: {
+                            command: "toggle",
+                            number: $(this).data("number")
+                        },
+                        /*
+                        success: function() {
+                            var toggledLightNumber = JSON.parse("{{ toggled_light_number|escapejs }}");
+                            alert(toggledLightNumber);
+                            var spanHtmlID = "#btn-light-span" + toggledLightNumber;
+                            $(spanHtmlID).toggleClass("fa-toggle-off fa-toggle-on");
+                        }
+                        */
+                        success: function(){ $(button).children("i").toggleClass("fa-toggle-on fa-toggle-off"); }
+                    });
+                })
+            });
+        }
+
+        /*
+         * Parses the contextual template variable 'lights_json' received from LightControllerView.
+         * lights_json is a list of dictionaries, with keys 'name', 'number', and 'on' corresponding to each light.
+         * Lights that have 'on'=True will get an "on" toggle,
+         * and those that are 'off' get an "off" toggle.
+         */
+        function initLightButtons() {
+            var lights = JSON.parse("{{ lights_json|escapejs }}");
+            for (var i = 0; i < lights.length; ++i) {
+                var light = lights[i];
+                var spanHtmlID = "#btn-light-span-" + light["number"];
+                if (light["on"]) {
+                    $(spanHtmlID).removeClass("fa-toggle-off");
+                    $(spanHtmlID).addClass("fa-toggle-on");
+                }
+                else {
+                    $(spanHtmlID).removeClass("fa-toggle-on");
+                    $(spanHtmlID).addClass("fa-toggle-off");
+                }
+            }
+        }
+
+        $(document).ready(function(){
+            makeNavButtonActive("#nav-bar-lights");
+            initLightButtons();
+            bindRefreshButton();
+            bindLightButtons();
+        });
+    </script>
+	{% endblock %}
+
+</html>

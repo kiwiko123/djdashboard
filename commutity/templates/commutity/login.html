@@ -12,20 +12,61 @@
 
 	{% block body %}
 		<div id="login-body">
-			<h1>Login</h1>
+			<h2>Login</h2>
 
 			<form action="{% url 'commutity:login' %}" method="post">
 				{% csrf_token %}
 				<label class="login-box-label" for="login-username-box">Username</label>
 				<input type="text" name="username" class="login-text-box" id="login-username-box"/>
 
-				<label for="login-password-box">Password</label>
+				<label class="login-box-label" for="login-password-box">Password</label>
 				<input type="password" name="password" class="login-text-box" id="login-password-box"/>
 
-				<button type="submit" class="btn btn-success btn-md" id="btn-login">Go</button>
+				<button type="submit" class="btn btn-success btn-md disabled" id="btn-login">Go</button>
 			</form>
 
+			<div id="create-user-body">
+				<p>Don't have an account yet? <a href="{% url 'commutity:create-account' %}">Make one.</a></p>
+			</div>
 		</div>
+
+		<script type="text/javascript">
+			/* Adds a red, bolded border around inputElement's textbox if the field is empty */
+			function _validateLoginInput(inputElement) {
+				if (fieldEmpty(inputElement))
+				{
+					$(inputElement).addClass("text-box-invalid");
+				}
+				else
+				{
+					$(inputElement).removeClass("text-box-invalid");
+				}
+			}
+
+			/* Disables $(buttonElement) if either of the input fields are not yet populated */
+			function _validateLoginButton(buttonElement) {
+				var invalidInput = fieldEmpty("#login-username-box") || fieldEmpty("#login-password-box");
+				$(buttonElement).prop("disabled", invalidInput);
+				if (invalidInput) {
+					$(buttonElement).addClass("disabled");
+				}
+				else {
+					$(buttonElement).removeClass("disabled");
+				}
+			}
+
+			function _validateLoginElements(inputElement) {
+				_validateLoginInput(inputElement);
+				_validateLoginButton("#btn-login");
+			}
+
+			$(document).ready(function(){
+				$("#btn-login").prop("disabled", true);
+				$("#login-username-box").keyup(function(){ _validateLoginElements("#login-username-box"); });
+				$("#login-password-box").keyup(function(){ _validateLoginElements("#login-password-box"); });
+				makeNavButtonActive("#nav-bar-get-started");
+			});
+		</script>
 	{% endblock %}
 
 </html>

@@ -1,7 +1,12 @@
 <?xml version="1.0"?>
 <properties>
-    <entity name="database_credentials">
+    <entry name="database_credentials">
     	<username>djdashboard_admin</username>
         <password>password</password>
-    </entity>
+        <key>fah82bF4CodQvGhf</key>
+        <iv>b'\x1aKas88\x04W\xeef\x0e-\xb4lm3'</iv>
+    </entry>
+    <entry name="mapquest_api_key">
+    	<key>G1WkCxpY9EP5ZckTXmxrhXh8RsT29xUT</key>
+    </entry>
 </properties>

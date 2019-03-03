@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+
+{% extends "flick/base.html" %}
+{% load static %}
+
+<html lang="en">
+
+    {% block header %}
+
+    {% endblock %}
+
+	{% block body %}
+    <div class="background-container">
+        <!-- image  source: https://www.youtube.com/watch?v=pOUqL5jGbn0 -->
+        <img class="background-image" src="{% static "flick/images/rainbow_lights_background.jpg" %}">
+	</div>
+	{% endblock %}
+
+</html>

@@ -38,6 +38,28 @@
 	background-color: #217532;
 }
 
+.text-box-invalid {
+	border-color: red;
+	border-style: solid;
+}
+
+.input-text-box-label {
+	margin: 0;
+}
+
+.input-text-box {
+	display: block;
+	margin-bottom: 2%;
+}
+
+.form-container {
+	padding-left: 5%;
+}
+
+.input-container {
+	padding-left: 2.5%;
+}
+
 #header-banner-title-text {
 	color: white;
 	font-weight: bold;
@@ -53,4 +75,9 @@
 	background-color: black;
 	padding: 0;
 	overflow: hidden;
+}
+
+#login-header {
+	top: 0;
+	right: 0;
 }

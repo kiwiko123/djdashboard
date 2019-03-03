@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+
+{% extends "flick/base.html" %}
+{% load static %}
+
+<html lang="en">
+	{% block head %}
+		<script type="text/javascript" src="{% static 'flick/js/common.js' %}"></script>
+		<link rel="stylesheet" type="text/css" href="{% static 'flick/css/login.css' %}">
+		<title>Flick - Login</title>
+	{% endblock %}
+
+	{% block header %}
+		<script type="text/javascript">
+			$(document).ready(function() {
+				$("#btn-login").prop("disabled", true);
+			});
+		</script>
+	{% endblock %}
+
+	{% block body %}
+		<div id="login-body">
+			<h2>Login</h2>
+
+			<form action="{% url 'flick:login' %}" method="post" id="login-form">
+				{% csrf_token %}
+				<label class="login-box-label" for="login-username-box">Username</label>
+				<input type="text" name="username" class="login-text-box" id="login-username-box"/>
+
+				<label class="login-box-label" for="login-password-box">Password</label>
+				<input type="password" name="password" class="login-text-box" id="login-password-box"/>
+
+				<button type="submit" class="btn btn-success btn-md disabled" id="btn-login">Go</button>
+			</form>
+
+			<div id="create-user-body">
+				<p>Don't have an account yet? <a href="{% url 'flick:create-account' %}">Make one.</a></p>
+			</div>
+		</div>
+	{% endblock %}
+
+	{% block script %}
+		<script type="text/javascript">
+			$(document).ready(function(){
+				makeNavButtonActive("#nav-bar-get-started");
+				common.requireFieldNonEmpty("#login-username-box");
+				common.requireFieldNonEmpty("#login-password-box");
+				common.disableButtonUnlessAllFieldsFilled("#btn-login", "form#login-form :input");
+			});
+		</script>
+	{% endblock %}
+
+</html>

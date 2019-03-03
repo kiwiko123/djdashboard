@@ -30,7 +30,7 @@ class PasswordEncryptor:
 
 
     _encoding = 'utf-8'
-    _ckey = bytes('fah82bF4CodQvGhfv6Am'[:16], encoding=_encoding)
+    _ckey = bytes('fah82bF4CodQvGhf'[:16], encoding=_encoding)
     _civ = b'\x1aKas88\x04W\xeef\x0e-\xb4lm3'
 
 
@@ -65,18 +65,13 @@ class PasswordEncryptor:
         """
         if key == 'default':
             key = self.default_key()
-        elif key is None:
-            key = self.generate_string(Crypto.Cipher.AES.block_size)
-        elif len(key) < Crypto.Cipher.AES.block_size:
+        elif type(key) is str and len(key) < Crypto.Cipher.AES.block_size:
             raise ValueError('AES encryption requires 16-byte string as a key')
-
-        if iv == 'default':
-            iv = self.default_iv()
-        elif iv is None:
-            iv = Crypto.Random.new().read(Crypto.Cipher.AES.block_size)
+        else:
+            key = self.generate_string(Crypto.Cipher.AES.block_size)
 
         self._key = bytes(key[:16], self._encoding)
-        self._iv = iv
+        self._iv = self.default_iv() if iv == 'default' else Crypto.Random.new().read(Crypto.Cipher.AES.block_size)
 
     @property
     def key(self) -> str:

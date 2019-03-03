@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    {% load static %}
+	<head>
+		<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g=" crossorigin="anonymous"></script>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+		<link rel="stylesheet" type="text/css" href="{% static "flick/css/common.css" %}">
+
+		{% block head %}
+		<title>Flick</title>
+		{% endblock %}
+	</head>
+
+	<header>
+        <div id="app-name" class="heading">Flick</div>
+
+        <div id="nav-bar">
+			<ul class="no-bullets" id="nav-bar-list">
+				<li class="nav-bar-horizontal nav-bar-active" id="nav-bar-home"><a href="{% url 'flick:index' %}">Home</a></li>
+				<li class="nav-bar-horizontal" id="nav-bar-about"><a>About</a></li>
+				<li class="nav-bar-horizontal" id="nav-bar-get-started"><a href="{% url 'flick:login' %}">Get Started</a></li>
+                <li class="nav-bar-horizontal" id="nav-bar-lights"><a href="{% url 'flick:light-controller' %}">Lights</a></li>
+			</ul>
+		</div>
+
+        {% block header %}
+        {% endblock %}
+	</header>
+
+
+	<body>
+		{% block body %}
+        {% endblock %}
+        <script type="text/javascript">
+			function switchActiveNavBarPerspective(elementPrevious, elementCurrent) {
+				$(elementPrevious).removeClass("nav-bar-active");
+				$(elementCurrent).addClass("nav-bar-active");
+			}
+
+			function makeNavButtonActive(element) {
+				var navButtons = $("#nav-bar-list li");
+				navButtons.each(function(index, li){ $(li).removeClass("nav-bar-active"); });
+				$(element).addClass("nav-bar-active");
+			}
+
+			function initNavBar() {
+				$("#nav-bar-list li").each(function(index, li){ $(li).click(function(){ makeNavButtonActive(li); }) });
+			}
+
+			$(document).ready(function() {
+				initNavBar();
+				//makeNavButtonActive("#nav-bar-home");
+			});
+		</script>
+
+		{% block script %}
+		{% endblock %}
+	</body>
+
+	<footer>
+	</footer>
+</html>

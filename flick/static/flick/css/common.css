@@ -1,0 +1,76 @@
+.heading {
+    color: white;
+    font-size: 4rem;
+    margin-bottom: 0;
+}
+
+/* source: https://stackoverflow.com/questions/1150163/stretch-and-scale-a-css-image-in-the-background-with-css-only */
+.background-container {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    z-index: -1;
+}
+
+.background-image {
+    width: 100%;
+    height: 100%;
+}
+
+.text-box-invalid {
+    border-color: red;
+    border-style: solid;
+}
+
+.input-text-box-label {
+    margin: 0;
+}
+
+.input-text-box {
+    display: block;
+    margin-bottom: 2%;
+}
+
+.form-container {
+    padding-left: 5%;
+}
+
+.input-container {
+    padding-left: 2.5%;
+}
+
+.no-bullets {
+	list-style-type: none;
+}
+
+.nav-bar-horizontal {
+	float: left;
+	color: white;
+}
+
+.nav-bar-horizontal a {
+	display: block;
+	color: white;
+	text-align: center;
+	padding: 15px;
+}
+
+.nav-bar-horizontal a:hover {
+	background-color: #616562;
+}
+
+.nav-bar-active {
+	background-color: #217532;
+}
+
+#nav-bar-list {
+	background-color: black;
+	padding: 0;
+	overflow: hidden;
+}
+
+h1 {
+    color: white;
+}
