@@ -6,28 +6,31 @@ import TableSide from './TableSide';
 import IconButton from './IconButton';
 import RequestService from '../js/requests';
 
-import { GameStatus } from '../js/enums';
+import { Actions, GameStatus, Players } from '../js/enums';
 
 import '../styles/common.css';
 import '../styles/PazaakGame.css';
 
 
 class PazaakGame extends React.Component {
-    static PLAYER = 'player';
-    static OPPONENT = 'opponent';
 
     constructor(props) {
         super(props);
 
         this._onClickEndTurn = this._onClickEndTurn.bind(this);
         this._onClickStand = this._onClickStand.bind(this);
+        this._onClickHandCard = this._onClickHandCard.bind(this);
         this._onReceiveEndTurnResponse = this._onReceiveEndTurnResponse.bind(this);
         this._onEndTurnHandler = this._onEndTurnHandler.bind(this);
-        this._onStartOver = this._onStartOver.bind(this);
+        this._onNewGame = this._onNewGame.bind(this);
         this._newGame = this._newGame.bind(this);
 
         this.state = this._getInitialState();
         this._requestService = new RequestService('http://localhost:8000');
+    }
+
+    componentDidMount() {
+        this._onNewGame();
     }
 
     render() {
@@ -51,12 +54,12 @@ class PazaakGame extends React.Component {
         let isWinner = false;
 
         switch (player) {
-            case PazaakGame.PLAYER:
+            case Players.PLAYER:
                 score = this.state.player.score;
                 isPlayer = true;
                 isWinner = this.state.gameOver.id === GameStatus.PLAYER_WINS;
                 break;
-            case PazaakGame.OPPONENT:
+            case Players.OPPONENT:
                 score = this.state.opponent.score;
                 isWinner = this.state.gameOver.id === GameStatus.OPPONENT_WINS;
                 break;
@@ -82,8 +85,8 @@ class PazaakGame extends React.Component {
 
     _getScoreRow() {
         const gameOverBanner = this._getGameOverBanner();
-        const playerScore = this._getPlayerHeader(PazaakGame.PLAYER);
-        const opponentScore = this._getPlayerHeader(PazaakGame.OPPONENT);
+        const playerScore = this._getPlayerHeader(Players.PLAYER);
+        const opponentScore = this._getPlayerHeader(Players.OPPONENT);
 
         return (
             <div className="GameHeader">
@@ -119,6 +122,7 @@ class PazaakGame extends React.Component {
                     placedCards={playerPlaced}
                     handCards={playerHand}
                     showHandCards={true}
+                    onClickHandCard={this._onClickHandCard}
                 />
                 <TableSide
                     isPlayer={false}
@@ -163,7 +167,7 @@ class PazaakGame extends React.Component {
                     fontAwesomeClassName="fas fa-redo"
                     disableOnClick={true}
                     showSpinnerOnClick={true}
-                    onClick={this._onStartOver}
+                    onClick={this._onNewGame}
                 >
                     Start Over
                 </IconButton>
@@ -174,13 +178,14 @@ class PazaakGame extends React.Component {
     /**
      * POSTs to the end-turn API endpoint.
      *
-     * @param player one of {PazaakGame.PLAYER, PazaakGame.OPPONENT}.
+     * @param player one of {Players.PLAYER, Players.OPPONENT}.
      * @private
      */
     _getNextMove(player) {
         const url = '/pazaak/api/end-turn';
+        const action = player === Players.PLAYER ? Actions.END_TURN_PLAYER : Actions.END_TURN_OPPONENT;
         const payload = {
-            action: `end-turn-${player}`,
+            action: action,
             turn: player,
             gameId: this.state.gameId,
         };
@@ -194,7 +199,7 @@ class PazaakGame extends React.Component {
      * @private
      */
     _onClickEndTurn() {
-        this._getNextMove(PazaakGame.PLAYER)
+        this._getNextMove(Players.PLAYER)
     }
 
     _onEndTurnHandler(payload) {
@@ -208,8 +213,8 @@ class PazaakGame extends React.Component {
 
         const playerToUpdate = payload.turn.justWent.value;
         const playerUpNext = payload.turn.upNext.value;
-        const isPlayerStanding = (playerToUpdate === PazaakGame.PLAYER && payload.isStanding) || this.state.player.isStanding;
-        const shouldWaitForUserInput = playerUpNext === PazaakGame.PLAYER && !isPlayerStanding;
+        const isPlayerStanding = (playerToUpdate === Players.PLAYER && payload.isStanding) || this.state.player.isStanding;
+        const shouldWaitForUserInput = playerUpNext === Players.PLAYER && !isPlayerStanding;
 
         const updatedState = this._getEndTurnUpdatedState(payload, playerToUpdate);
         this.setState({
@@ -233,10 +238,10 @@ class PazaakGame extends React.Component {
         let state = {};
 
         switch (player) {
-            case PazaakGame.PLAYER:
+            case Players.PLAYER:
                 state = { player: playerData };
                 break;
-            case PazaakGame.OPPONENT:
+            case Players.OPPONENT:
                 state = { opponent: playerData };
                 break;
             default:
@@ -260,7 +265,7 @@ class PazaakGame extends React.Component {
                 placed: [],
                 hand: [],
             },
-            turn: PazaakGame.PLAYER,
+            turn: Players.PLAYER,
             disableActionButtons: false,
             isNewGame: true,
             gameOver: {
@@ -270,25 +275,32 @@ class PazaakGame extends React.Component {
         };
     }
 
-    _onStartOver() {
-        const url = '/pazaak/api/new-game';
-        this._requestService.get(url)
-            .then(this._newGame);
+    _onNewGame() {
+        this.setState(this._getInitialState());
+        // const url = '/pazaak/api/new-game';
+        // this._requestService.get(url)
+        //     .then(this._newGame);
     }
 
-    _newGame() {
-        const state = this._getInitialState();
-        this.setState(state);
+    _newGame(payload) {
+        const initialState = this._getInitialState();
+        this.setState({
+            ...initialState,
+            ...payload,
+        });
     }
 
     _onClickStand() {
-        this._onStand(PazaakGame.PLAYER);
+        const url = '/pazaak/api/stand';
+        const payload = { action: Actions.STAND_PLAYER };
+        this._requestService.post(url, payload)
+            .then(this._onReceiveEndTurnResponse);
     }
 
-    _onStand(player) {
-        const url = '/pazaak/api/stand';
-        const payload = { action: `stand-${player}` };
-        this._requestService.post(url, payload)
+    _onClickHandCard(index) {
+        const url = '/pazaak/api/select-hand-card';
+        const payload = { index };
+        return this._requestService.post(url, payload)
             .then(this._onReceiveEndTurnResponse);
     }
 

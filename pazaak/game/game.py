@@ -4,8 +4,7 @@ from pazaak.game import cards
 from pazaak.game.cards import PazaakCard
 from pazaak.game.errors import GameLogicError, GameOverError
 from pazaak.game.players import PazaakPlayer
-from pazaak.game.status import GameStatus
-from pazaak.game.turn import Turn
+from pazaak.enums import GameStatus, Turn
 from pazaak.data_structures.hash_tables import MultiSet
 from pazaak.helpers.bases import Serializable
 from pazaak.helpers.utilities import first_true
