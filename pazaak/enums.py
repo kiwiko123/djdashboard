@@ -86,6 +86,18 @@ class GameStatus(SerializableEnum):
 # ======================================
 
 @enum.unique
+class GameRules(SerializableEnum):
+    MAX_CARDS_ON_TABLE = 9
+    WINNING_SCORE = 20
+    MAX_MODIFIER = 10
+
+    @classmethod
+    def should_export_to_js(cls) -> bool:
+        return True
+
+# ======================================
+
+@enum.unique
 class RequestType(enum.Enum):
     GET = 'GET'
     POST = 'POST'

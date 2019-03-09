@@ -10,6 +10,12 @@ export const Actions = {
     STAND_PLAYER: 'stand-player',
 };
 
+export const GameRules = {
+    MAX_CARDS_ON_TABLE: 9,
+    WINNING_SCORE: 20,
+    MAX_MODIFIER: 10,
+};
+
 export const GameStatus = {
     PLAYER_WINS: 0,
     OPPONENT_WINS: 1,

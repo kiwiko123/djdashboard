@@ -1,25 +1,26 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { classes } from '../js/util';
 import PazaakCard from './PazaakCard';
+import { classes } from '../js/util';
 
 import '../styles/common.css';
 import '../styles/TableSide.css';
+import '../styles/PazaakCard.css';
 
 
-class TableSide extends PureComponent {
+class TableSide extends Component {
     static propTypes = {
         isPlayer: PropTypes.bool,
         placedCards: PropTypes.arrayOf(
             PropTypes.shape({
-                modifier: PropTypes.number,
-                parity: PropTypes.string,
+                modifier: PropTypes.number.isRequired,
+                parity: PropTypes.string.isRequired,
             }),
         ).isRequired,
         handCards: PropTypes.arrayOf(
             PropTypes.shape({
-                modifier: PropTypes.number,
-                parity: PropTypes.string,
+                modifier: PropTypes.number.isRequired,
+                parity: PropTypes.string.isRequired,
             }),
         ),
         showHandCards: PropTypes.bool,
@@ -31,6 +32,29 @@ class TableSide extends PureComponent {
         placedCards: [],
         handCards: [],
     };
+
+    _getPlaceholder() {
+        const className = "card-placeholder pazaak-card-shape horizontal-row";
+        return (
+            <div className={className}
+            />
+        );
+    }
+
+    _getPlaceholders(numCardsPlaced) {
+        const numCardsPerRow = 4;
+        const upperBound = Math.max(1, numCardsPlaced);
+        const maxPlaceholdersPerRow = numCardsPerRow * Math.ceil(upperBound / numCardsPerRow);
+        const numPlaceholdersNeeded = Math.abs(maxPlaceholdersPerRow - numCardsPlaced);
+        const placeholders = [];
+
+        for (let i = 0; i < numPlaceholdersNeeded; ++i) {
+            const placeholder = this._getPlaceholder();
+            placeholders.push(placeholder);
+        }
+
+        return placeholders;
+    }
 
     _getCard(card, index, isHandCard) {
         const handData = {
@@ -50,7 +74,13 @@ class TableSide extends PureComponent {
     }
 
     _getCards(cards, isHandCard) {
-        return cards.map((card, index) => this._getCard(card, index, isHandCard));
+        let result = cards.map((card, index) => this._getCard(card, index, isHandCard));
+        if (!isHandCard) {
+            const placeholders = this._getPlaceholders(cards.length);
+            result = result.concat(placeholders);
+        }
+
+        return result;
     }
 
     render() {

@@ -5,12 +5,14 @@ from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
 
 from pazaak.server.url_tools import AutoParseableViewURL
-from pazaak.enums import Actions, GameStatus, Turn
+from pazaak.enums import Actions, GameRules, GameStatus, Turn
 from pazaak.game import cards
 from pazaak.errors import GameLogicError, GameOverError, ServerError
 from pazaak.game.game import PazaakGame, PazaakCard
 from pazaak.helpers.bases import serialize
 
+
+_MAX_MODIFIER = GameRules.MAX_MODIFIER.value
 
 def _init_game() -> PazaakGame:
     return PazaakGame(cards.random_cards(4, positive_only=False, bound=5))
@@ -143,7 +145,7 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
             if game.player.is_standing:
                 move = PazaakCard.empty()
             elif move is None:
-                move = cards.random_card(positive_only=True, bound=game.max_modifier)
+                move = cards.random_card(positive_only=True, bound=_MAX_MODIFIER)
 
         elif turn == Turn.OPPONENT:
             player = game.opponent

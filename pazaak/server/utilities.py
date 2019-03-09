@@ -2,6 +2,8 @@ import inspect
 
 from django.http import HttpResponse
 
+from pazaak.enums import RequestType
+
 
 class allow_cors:
     def __init__(self, url: str, method_type: RequestType):
