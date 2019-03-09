@@ -1,5 +1,5 @@
 from pazaak.game.cards import PazaakCard
-from pazaak.game.errors import GameLogicError
+from pazaak.errors import GameLogicError
 from pazaak.helpers.bases import Serializable
 
 

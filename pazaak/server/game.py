@@ -1,13 +1,13 @@
 import abc
 
 from django.utils.decorators import method_decorator
-from django.views import generic
+from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
 
-from pazaak.server.url_tools import ViewURLAutoParser
+from pazaak.server.url_tools import AutoParseableViewURL
 from pazaak.enums import Actions, GameStatus, Turn
 from pazaak.game import cards
-from pazaak.game.errors import GameLogicError, GameOverError
+from pazaak.errors import GameLogicError, GameOverError, ServerError
 from pazaak.game.game import PazaakGame, PazaakCard
 from pazaak.helpers.bases import serialize
 
@@ -16,14 +16,16 @@ def _init_game() -> PazaakGame:
     return PazaakGame(cards.random_cards(4, positive_only=False, bound=5))
 
 
-class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMeta):
+
+class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
     """
     Intermediate class encapsulating common data for each View endpoint (in views.py).
-    To support simultaneous games, PazaakGameAPI stores a static collection of all currently-ongoing games.
+    To support simultaneous games, PazaakGameView stores a static collection of all currently-ongoing games.
     Starting a new game generates a unique ID, which is persisted throughout all web requests made by the client.
     Upon receiving a request, the server verifies that the ID is valid, then retrieves the game mapped to that ID.
+    One notable thing about this implementation is that separate browser tabs will have separate game instances.
 
-    Each View must be derived from PazaakGameAPI to maintain state.
+    Each View must be derived from PazaakGameView to maintain state.
     """
     PLAYER_TAG = 'player'
     OPPONENT_TAG = 'opponent'
@@ -37,7 +39,7 @@ class PazaakGameAPI(generic.TemplateView, ViewURLAutoParser, metaclass=abc.ABCMe
         Returns the game associated with the given ID.
         """
         if game_id not in cls._games:
-            raise ValueError('Unknown game received')
+            raise ServerError('Unknown game received')
         return cls._games[game_id]
 
 

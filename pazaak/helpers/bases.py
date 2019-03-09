@@ -35,7 +35,7 @@ class _SerializableEnumMeta(enum.EnumMeta, abc.ABCMeta):
 class SerializableEnum(Serializable, enum.Enum, metaclass=_SerializableEnumMeta):
 
     @classmethod
-    def export_to_js(cls) -> bool:
+    def should_export_to_js(cls) -> bool:
         """
         Override this to return True if the enum should be auto-exported as a JS class.
         See pazaak.enums.export_enums_to_js() for details.
