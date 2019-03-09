@@ -1,3 +1,8 @@
 .TableSide {
     padding: 10px;
 }
+
+.card-placeholder {
+    background: lightgray;
+    opacity: 0.1;
+}

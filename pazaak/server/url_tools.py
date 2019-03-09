@@ -5,7 +5,7 @@ import re
 from django.conf.urls import url
 
 
-class ViewURLAutoParser(metaclass=abc.ABCMeta):
+class AutoParseableViewURL(metaclass=abc.ABCMeta):
     """
     Base class to simplify Django URL setup.
     Implementing the url() class method allows the function url_patterns to be called in the top-level urls.py.
@@ -25,7 +25,7 @@ class ViewURLAutoParser(metaclass=abc.ABCMeta):
     @classmethod
     def regex_url(cls) -> str:
         """
-        Returns the formatted regular expression URL required by Django's url function.
+        Returns the formatted regular expression URL required by Django's url() function.
         Do not override this.
         """
         url = cls.url()
@@ -52,15 +52,17 @@ class ViewURLAutoParser(metaclass=abc.ABCMeta):
 
 
 
-def url_patterns(module) -> [url]:
+def url_patterns(module, predicate: callable) -> [url]:
     """
-    Scans module for classes derived from ViewURLAutoParser that have implemented the url() class method.
+    Scans module for classes derived from AutoParseableViewURL that have implemented the @classmethod url().
     Returns an auto-generated list of Django URL patterns required by the app's top-level urls.py.
+    Call this method on the views module (views.py).
     """
-    predicate = lambda cls: inspect.isclass(cls) \
-                        and ViewURLAutoParser in inspect.getmro(cls) \
-                        and cls.url()
     return [url(cls.regex_url(), cls.as_view(), name=cls.name()) for _, cls in inspect.getmembers(module, predicate=predicate)]
+
+
+def client_url() -> str:
+    return 'http://localhost:3000'
 
 
 if __name__ == '__main__':

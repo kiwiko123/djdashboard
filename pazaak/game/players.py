@@ -1,5 +1,5 @@
 from pazaak.game.cards import PazaakCard
-from pazaak.game.errors import GameLogicError
+from pazaak.errors import GameLogicError
 from pazaak.helpers.bases import Serializable
 
 
@@ -30,14 +30,24 @@ class PazaakPlayer(Serializable):
 
     @property
     def hand(self) -> [PazaakCard]:
+        """
+        The hand deck is the collection of cards that you can play instead of drawing a random card.
+        These are useful when one of their values plus your current score equals 20.
+        """
         return self._hand
 
     @property
     def placed(self) -> [PazaakCard]:
+        """
+        All of the cards this player has already placed.
+        """
         return self._placed
 
     @property
     def is_standing(self) -> bool:
+        """
+        Once the player has stood, they cannot make any more moves until the game is over.
+        """
         return self._is_standing
 
     @property
@@ -50,6 +60,10 @@ class PazaakPlayer(Serializable):
 
     @property
     def identifier(self) -> str:
+        """
+        "Friendly-name" identifier. Use Turn.PLAYER.value or Turn.OPPONENT.value.
+        :return:
+        """
         return self._identifier
 
     @property

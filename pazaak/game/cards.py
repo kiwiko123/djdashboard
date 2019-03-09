@@ -1,6 +1,6 @@
 import random
 
-from pazaak.game.errors import GameLogicError
+from pazaak.errors import GameLogicError
 from pazaak.helpers.bases import Serializable
 from pazaak.helpers.utilities import coin_flip
 
@@ -12,6 +12,11 @@ class PazaakCard(Serializable):
 
     @classmethod
     def empty(cls) -> 'PazaakCard':
+        """
+        Returns an "empty" Pazaak card.
+        This is useful for representing a non-playable Pazaak card, without having to use None.
+        It's initialized with a value of 0 -- PazaakCards can't otherwise be initialized with this value (outside of this method).
+        """
         cls.__initializing_empty = True
         card = cls(cls.__EMPTY_VALUE)
         cls.__initializing_empty = False
@@ -20,7 +25,7 @@ class PazaakCard(Serializable):
     @classmethod
     def _generate_id(cls) -> int:
         """
-        Returns and increments a static ID number.
+        Returns and increments a unique static ID number.
         Used for hashing PazaakCards.
         """
         result = cls.__id
@@ -31,6 +36,7 @@ class PazaakCard(Serializable):
         """
         Initialize a new Pazaak card.
         Modifier is the value to add/subtract to the player's score.
+        Cannot be initialized with a value of 0.
         """
         if modifier == PazaakCard.__EMPTY_VALUE and not PazaakCard.__initializing_empty:
             raise ValueError('cannot initialize a PazaakCard with the empty card value ({0})'.format(modifier))
@@ -54,9 +60,16 @@ class PazaakCard(Serializable):
 
     @property
     def modifier(self) -> int:
+        """
+        The value of the card.
+        """
         return self._modifier
 
     def parity(self) -> str:
+        """
+        A string representing the value of the card, with it's "sign" in front of it.
+        Example: "+5"
+        """
         p = '+' if self.modifier > 0 else ''
         return '{0}{1}'.format(p, self.modifier)
 

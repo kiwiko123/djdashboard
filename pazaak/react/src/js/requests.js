@@ -1,9 +1,9 @@
-import { endsWith, startsWith } from 'lodash';
+import { endsWith, isEmpty, startsWith } from 'lodash';
 
 
 class RequestService {
 
-	constructor(base_url, persistentPayload) {
+	constructor(base_url = '', persistentPayload = {}) {
 		this._base_url = base_url
 		this._persistentPayload = persistentPayload;
 	}
@@ -34,11 +34,13 @@ class RequestService {
 	}
 
 	_normalize_url(url) {
-		if (!startsWith(url, '/')) {
-			url = `/${url}`;
-		}
-		if (!endsWith(url, '/')) {
-			url = `${url}/`;
+		if (!isEmpty(this._base_url)) {
+			if (!startsWith(url, '/')) {
+				url = `/${url}`;
+			}
+			if (!endsWith(url, '/')) {
+				url = `${url}/`;
+			}
 		}
 
 		return `${this._base_url}${url}`;
