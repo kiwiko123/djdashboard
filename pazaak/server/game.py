@@ -18,6 +18,45 @@ def _init_game() -> PazaakGame:
     return PazaakGame(cards.random_cards(4, positive_only=False, bound=5))
 
 
+class GameManager:
+    def __init__(self):
+        self._games = {}
+        self._next_game_id = 0
+
+
+    def new_game(self) -> int:
+        game_id = self._increment_game_id()
+        game = _init_game()
+        self._games[game_id] = game
+        return game_id
+
+
+    def get_game(self, game_id: int) -> PazaakGame:
+        if game_id not in self._games:
+            raise ServerError('Unknown game received')
+        return self._games[game_id]
+
+
+    def remove_game(self, game_id: int) -> None:
+        if game_id in self._games:
+            del self._games[game_id]
+
+
+    def clean_games(self) -> None:
+        games_to_remove = (game_id for game_id, game in self._games.items() if game.is_over)
+        for game_id in games_to_remove:
+            self.remove_game(game_id)
+
+
+    def game_count(self) -> int:
+        return len(self._games)
+
+
+    def _increment_game_id(self) -> int:
+        result = self._next_game_id
+        self._next_game_id += 1
+        return result
+
 
 class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
     """
@@ -31,48 +70,7 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
     """
     PLAYER_TAG = 'player'
     OPPONENT_TAG = 'opponent'
-    _games = {}
-    _game_id = 0
-
-
-    @classmethod
-    def retrieve_game(cls, game_id: int) -> PazaakGame:
-        """
-        Returns the game associated with the given ID.
-        """
-        if game_id not in cls._games:
-            raise ServerError('Unknown game received')
-        return cls._games[game_id]
-
-
-    @classmethod
-    def new_game(cls) -> None:
-        """
-        Creates a new game and returns the generated ID associated to it.
-        """
-        new_game_id = cls._post_increment_game_id()
-        cls._games[new_game_id] = _init_game()
-        return new_game_id
-
-
-    @classmethod
-    def remove_game(cls, game_id: int) -> None:
-        """
-        Deletes the game associated to the given ID.
-        Call this when manually starting a game over.
-        """
-        if game_id in cls._games:
-            del cls._games[game_id]
-
-
-    @classmethod
-    def _post_increment_game_id(cls) -> int:
-        """
-        Generates and returns a new game ID.
-        """
-        game_id = cls._game_id
-        cls._game_id += 1
-        return game_id
+    game_manager = GameManager()
 
 
     @method_decorator(csrf_exempt)
@@ -137,7 +135,7 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
         return self._next_move(game, turn, move=move)
 
 
-    def _next_move(self, game: PazaakGame, turn: Turn, move=None) -> 'MoveInfo':
+    def _next_move(self, game: PazaakGame, turn: Turn, move=None) -> dict:
         player = None
 
         if turn == Turn.PLAYER:
@@ -157,7 +155,8 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
         context = {
             'status': GameStatus.GAME_ON.value,   # TODO fix in serialize()
             'move': move,
-            'turn': {'justWent': game.turn}
+            'turn': {'justWent': game.turn},
+            # 'currentPlayer': player
         }
 
         if move is not None:
@@ -176,4 +175,4 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
         if key not in payload:
             raise ValueError('Front-end did not send up a game ID')
         game_id = payload[key]
-        return cls.retrieve_game(game_id)
+        return cls.game_manager.get_game(game_id)

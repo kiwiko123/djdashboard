@@ -15,3 +15,11 @@
 .text-align-left {
     text-align: left;
 }
+
+.stick-right {
+    float: right;
+}
+
+.margin-right-small {
+    margin-right: 1rem;
+}

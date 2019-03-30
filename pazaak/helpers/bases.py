@@ -1,5 +1,47 @@
 import abc
+import datetime
 import enum
+
+
+class _UpdateHistory:
+    _primitive_types = {int, float, bool, str}
+
+    def __init__(self, attribute: str, value):
+        self.last_updated = datetime.datetime.now()
+        self.attribute = attribute
+        self.value = value if type(value) in self._primitive_types else None
+
+    def __str__(self) -> str:
+        return '{0}(attribute={1}, value={2}, last_updated={3})'.format(type(self).__name__, self.attribute, self.value, self.last_updated)
+
+
+class Trackable:
+    _whitelisted_fields = {
+        '_whitelisted_fields',
+        '_history'
+    }
+
+    def __init__(self):
+        self._history = []
+
+    def __setattr__(self, name: str, value):
+        super().__setattr__(name, value)
+        if name not in Trackable._whitelisted_fields:
+            self._update(name, value)
+
+    def last_modification(self) -> _UpdateHistory:
+        result = None
+        if self._history:
+            result = self._history[-1]
+
+        return result
+
+    def diff_count(self) -> int:
+        return len(self._history)
+
+    def _update(self, attribute: str, value) -> None:
+        update = _UpdateHistory(attribute, value)
+        self._history.append(update)
 
 
 class Serializable(metaclass=abc.ABCMeta):

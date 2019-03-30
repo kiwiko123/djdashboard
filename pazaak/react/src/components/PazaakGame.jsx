@@ -1,19 +1,20 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { get } from 'lodash';
 
 import PlayerHeader from './PlayerHeader';
 import TableSide from './TableSide';
+import HoverButton from './HoverButton';
 import IconButton from './IconButton';
 import RequestService from '../js/requests';
 
-import { Actions, GameStatus, Players } from '../js/enums';
+import { Actions, GameStatus, Players, Theme } from '../js/enums';
 
 import '../styles/common.css';
 import '../styles/colors.css';
 import '../styles/PazaakGame.css';
 
 
-class PazaakGame extends React.Component {
+class PazaakGame extends Component {
 
     constructor(props) {
         super(props);
@@ -25,25 +26,33 @@ class PazaakGame extends React.Component {
         this._onEndTurnHandler = this._onEndTurnHandler.bind(this);
         this._onClickStartOver = this._onClickStartOver.bind(this);
         this._newGame = this._newGame.bind(this);
+        this._onHoverHandCardVisibilitySetting = this._onHoverHandCardVisibilitySetting.bind(this);
+        this._onLeaveHandCardVisibilitySetting = this._onLeaveHandCardVisibilitySetting.bind(this);
+        this._toggleOpponentHandCardVisibility = this._toggleOpponentHandCardVisibility.bind(this);
+        this._onHoverThemeControl = this._onHoverThemeControl.bind(this);
+        this._onLeaveThemeControl = this._onLeaveThemeControl.bind(this);
 
         this.state = this._getInitialState();
         this._requestService = new RequestService('http://localhost:8000');
-    }
 
-    componentDidMount() {
-        this._onFirstLoad();
+        const newGameURL = '/pazaak/api/new-game';
+        this._requestService
+            .get(newGameURL)
+            .then(this._newGame);
     }
 
     render() {
         const scoreRow = this._getScoreRow();
         const table = this._getTable();
         const actionButtons = this._getActionButtons();
+        const controls = this._getControls();
 
         return (
             <div className="PazaakGame">
                 {scoreRow}
                 {table}
                 {actionButtons}
+                {controls}
             </div>
         );
     }
@@ -129,7 +138,7 @@ class PazaakGame extends React.Component {
                     isPlayer={false}
                     placedCards={opponentPlaced}
                     handCards={opponentHand}
-                    showHandCards={false}
+                    showHandCards={this.state.opponentHandCardVisibility.showOpponentHandCards}
                 />
             </div>
         );
@@ -137,7 +146,6 @@ class PazaakGame extends React.Component {
 
     _getActionButtons() {
         const disableActionButtons = this.state.disableActionButtons || this.state.gameOver.value;
-        const showSpinner = !this.state.gameOver.value;
 
         return (
             <div className="row horizontal-row full-width">
@@ -146,7 +154,7 @@ class PazaakGame extends React.Component {
                     fontAwesomeClassName="fas fa-play"
                     disabled={disableActionButtons}
                     disableOnClick={true}
-                    showSpinnerOnClick={showSpinner}
+                    showSpinnerOnClick={!this.state.gameOver.value}
                     onClick={this._onClickEndTurn}
                 >
                     End Turn
@@ -156,7 +164,6 @@ class PazaakGame extends React.Component {
                     variant="warning"
                     fontAwesomeClassName="fas fa-arrow-up"
                     disableOnClick={true}
-                    showSpinnerOnClick={showSpinner}
                     disabled={disableActionButtons}
                     onClick={this._onClickStand}
                 >
@@ -172,6 +179,28 @@ class PazaakGame extends React.Component {
                 >
                     Start Over
                 </IconButton>
+            </div>
+        );
+    }
+
+    _getControls() {
+        return (
+            <div className="controls row horizontal-row stick-right">
+                <HoverButton
+                    className="color-white margin-right-small"
+                    fontAwesomeClassName={this.state.opponentHandCardVisibility.icon}
+                    onHover={this._onHoverHandCardVisibilitySetting}
+                    onLeave={this._onLeaveHandCardVisibilitySetting}
+                    onClick={this._toggleOpponentHandCardVisibility}
+                />
+
+                <HoverButton
+                    className="color-white"
+                    fontAwesomeClassName={this.state.theme.icon}
+                    onClick={() => {}}
+                    onHover={this._onHoverThemeControl}
+                    onLeave={this._onLeaveThemeControl}
+                />
             </div>
         );
     }
@@ -205,7 +234,21 @@ class PazaakGame extends React.Component {
     }
 
     _onEndTurnHandler(payload) {
-        setTimeout(() => this._onReceiveEndTurnResponse(payload), 1 * 750);
+        let timeoutMs = 0;
+
+        if (this.state.turn === Players.PLAYER) {
+            if (this.state.player.isStanding) {
+                timeoutMs = 500;
+            }
+        } else {
+            timeoutMs = 750;
+        }
+
+        if (timeoutMs > 0) {
+            setTimeout(() => this._onReceiveEndTurnResponse(payload), timeoutMs);
+        } else {
+            this._onReceiveEndTurnResponse(payload);
+        }
     }
 
     _onReceiveEndTurnResponse(payload) {
@@ -237,6 +280,7 @@ class PazaakGame extends React.Component {
             placed: payload.placed,
             hand: payload.hand,
             isStanding: payload.isStanding,
+            record: payload.record,
         };
         let state = {};
 
@@ -255,18 +299,32 @@ class PazaakGame extends React.Component {
     }
 
     _getInitialState() {
+        // try to preserve settings if starting over
+        const showOpponentHandCards = get(this.state, 'opponentHandCardVisibility.showOpponentHandCards', false);
+        const currentTheme = get(this.state, 'theme.value', Theme.DARK);
+
         return {
             player: {
                 score: 0,
                 isStanding: false,
                 placed: [],
                 hand: [],
+                record: {
+                    wins: 0,
+                    losses: 0,
+                    ties: 0,
+                },
             },
             opponent: {
                 score: 0,
                 isStanding: false,
                 placed: [],
                 hand: [],
+                record: {
+                    wins: 0,
+                    losses: 0,
+                    ties: 0,
+                },
             },
             turn: Players.PLAYER,
             disableActionButtons: false,
@@ -275,13 +333,15 @@ class PazaakGame extends React.Component {
                 value: false,
                 id: GameStatus.GAME_ON,
             },
+            opponentHandCardVisibility: {
+                showOpponentHandCards: showOpponentHandCards,
+                icon: this._getOpponentVisibilityIcon(showOpponentHandCards),
+            },
+            theme: {
+                value: currentTheme,
+                icon: this._getThemeControlIcon(currentTheme),
+            },
         };
-    }
-
-    _onFirstLoad() {
-        const url = '/pazaak/api/new-game';
-        this._requestService.get(url)
-            .then(this._newGame);
     }
 
     _onClickStartOver() {
@@ -301,6 +361,7 @@ class PazaakGame extends React.Component {
     }
 
     _onClickStand() {
+        window.scrollTo(0, 0); // TODO -- better way of scrolling than using window?
         this.setState({ disableActionButtons: true });
         const url = '/pazaak/api/stand';
         const payload = { action: Actions.STAND_PLAYER };
@@ -354,6 +415,102 @@ class PazaakGame extends React.Component {
         });
 
         return gameOver;
+    }
+
+    _getOpponentVisibilityIcon(shouldShow) {
+        const enabledFaIcon = 'fa-eye';
+        const disabledFaIcon = 'fa-eye-slash';
+        const result = shouldShow ? enabledFaIcon : disabledFaIcon;
+
+        return `fas ${result} fa-2x`;
+    }
+
+    _onHoverHandCardVisibilitySetting() {
+        const opponentHandCardVisibility = this.state.opponentHandCardVisibility;
+        const reversedIcon = this._getOpponentVisibilityIcon(!opponentHandCardVisibility.showOpponentHandCards);
+        this.setState({
+            opponentHandCardVisibility: {
+                ...opponentHandCardVisibility,
+                icon: reversedIcon,
+            },
+        });
+    }
+
+    _onLeaveHandCardVisibilitySetting() {
+        const opponentHandCardVisibility = this.state.opponentHandCardVisibility;
+        const icon = this._getOpponentVisibilityIcon(opponentHandCardVisibility.showOpponentHandCards);
+        this.setState({
+            opponentHandCardVisibility: {
+                ...opponentHandCardVisibility,
+                icon: icon,
+            },
+        });
+    }
+
+    _toggleOpponentHandCardVisibility() {
+        const opponentHandCardVisibility = this.state.opponentHandCardVisibility;
+        const isShowing = opponentHandCardVisibility.showOpponentHandCards;
+        const icon = this._getOpponentVisibilityIcon(isShowing);
+        this.setState({
+            opponentHandCardVisibility: {
+                ...opponentHandCardVisibility,
+                showOpponentHandCards: !isShowing,
+                icon: icon,
+            },
+        });
+    }
+
+    _getThemeControlIcon(currentTheme) {
+        let result;
+        switch (currentTheme) {
+            case Theme.LIGHT:
+                result = 'fa-sun';
+                break;
+            case Theme.DARK:
+                result = 'fa-moon';
+                break;
+            default:
+                // default
+        }
+
+        return `fas ${result} fa-2x`;
+    }
+
+    _getOppositeTheme(theme) {
+        let result;
+        switch (theme) {
+            case Theme.LIGHT:
+                result = Theme.DARK;
+                break;
+            case Theme.DARK:
+                result = Theme.LIGHT;
+                break;
+            default:
+                // error
+        }
+
+        return result;
+    }
+
+    _onHoverThemeControl() {
+        const { theme } = this.state;
+        const oppositeTheme = this._getOppositeTheme(this.state.theme.value);
+        this.setState({
+            theme: {
+                ...theme,
+                icon: this._getThemeControlIcon(oppositeTheme),
+            },
+        });
+    }
+
+    _onLeaveThemeControl() {
+        const { theme } = this.state;
+        this.setState({
+            theme: {
+                ...theme,
+                icon: this._getThemeControlIcon(this.state.theme.value),
+            },
+        });
     }
 }
 

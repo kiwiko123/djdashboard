@@ -33,10 +33,11 @@ class TableSide extends Component {
         handCards: [],
     };
 
-    _getPlaceholder() {
+    _getPlaceholder(key) {
         const className = "card-placeholder pazaak-card-shape horizontal-row";
         return (
-            <div className={className}
+            <div key={key}
+                 className={className}
             />
         );
     }
@@ -49,7 +50,7 @@ class TableSide extends Component {
         const placeholders = [];
 
         for (let i = 0; i < numPlaceholdersNeeded; ++i) {
-            const placeholder = this._getPlaceholder();
+            const placeholder = this._getPlaceholder(i + numCardsPlaced);
             placeholders.push(placeholder);
         }
 
