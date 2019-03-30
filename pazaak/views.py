@@ -22,23 +22,31 @@ import json
 from django.http import HttpRequest, HttpResponse, JsonResponse
 
 from pazaak.server.game import PazaakGameView
-from pazaak.server.url_tools import client_url
 from pazaak.server.utilities import allow_cors, RequestType
 
+
+# TODO find a more central place for this function
+def client_url() -> str:
+    return 'http://localhost:3000'
 
 _CLIENT_URL = client_url()
 
 class NewGameView(PazaakGameView):
-    @classmethod
-    def url(cls) -> str:
+    @staticmethod
+    def url() -> str:
         return '/api/new-game'
 
     @allow_cors(_CLIENT_URL, RequestType.GET)
     def get(self) -> HttpResponse:
-        game_id = self.new_game()
-        game = self.retrieve_game(game_id)
+        print(self.game_manager.game_count())
+        if self.game_manager.game_count() % 10 == 0:
+            self.game_manager.clean_games()
+
+        game_id = self.game_manager.new_game()
+        game = self.game_manager.get_game(game_id)
         context = game.json()
         context['gameId'] = game_id
+
         return JsonResponse(context)
 
     @allow_cors(_CLIENT_URL, RequestType.POST)
@@ -46,13 +54,13 @@ class NewGameView(PazaakGameView):
         payload = json.loads(request.body)
         if 'gameId' in payload:
             game_id = payload['gameId']
-            self.remove_game(game_id)
+            self.game_manager.remove_game(game_id)
         return self.get(request)
 
 
 class EndTurnView(PazaakGameView):
-    @classmethod
-    def url(cls) -> str:
+    @staticmethod
+    def url() -> str:
         return '/api/end-turn'
 
     @allow_cors(_CLIENT_URL, RequestType.POST)
@@ -63,8 +71,8 @@ class EndTurnView(PazaakGameView):
 
 
 class StandView(PazaakGameView):
-    @classmethod
-    def url(cls) -> str:
+    @staticmethod
+    def url() -> str:
         return '/api/stand'
 
     @allow_cors(_CLIENT_URL, RequestType.POST)
@@ -75,8 +83,8 @@ class StandView(PazaakGameView):
 
 
 class SelectHandCardView(PazaakGameView):
-    @classmethod
-    def url(cls) -> str:
+    @staticmethod
+    def url() -> str:
         return '/api/select-hand-card'
 
     @allow_cors(_CLIENT_URL, RequestType.POST)
