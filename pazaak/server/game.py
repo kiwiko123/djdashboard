@@ -43,9 +43,9 @@ class GameManager:
 
 
     def clean_games(self) -> None:
-        for game_id, game in self._games.items():
-            if game.is_over:
-                self.remove_game(game_id)
+        games_to_remove = (game_id for game_id, game in self._games.items() if game.is_over)
+        for game_id in games_to_remove:
+            self.remove_game(game_id)
 
 
     def game_count(self) -> int:
@@ -135,7 +135,7 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
         return self._next_move(game, turn, move=move)
 
 
-    def _next_move(self, game: PazaakGame, turn: Turn, move=None) -> 'MoveInfo':
+    def _next_move(self, game: PazaakGame, turn: Turn, move=None) -> dict:
         player = None
 
         if turn == Turn.PLAYER:
@@ -155,7 +155,8 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
         context = {
             'status': GameStatus.GAME_ON.value,   # TODO fix in serialize()
             'move': move,
-            'turn': {'justWent': game.turn}
+            'turn': {'justWent': game.turn},
+            # 'currentPlayer': player
         }
 
         if move is not None:

@@ -128,15 +128,16 @@ class PazaakGame(Serializable, Trackable):
         else:
             previous_score = player.score
             player.placed.append(move)
-            player.score += move.modifier
+            new_score = player.score + move.modifier
 
-            if player.score == _WINNING_SCORE:
+            if new_score == _WINNING_SCORE:
                 player.stand()
 
             # ending a turn with a score over 20 is an automatic loss
-            if previous_score > _WINNING_SCORE and player.score > _WINNING_SCORE:
+            if previous_score > _WINNING_SCORE and new_score > _WINNING_SCORE:
                 status = GameStatus.from_turn(opposite_turn)
             else:
+                player.score = new_score
                 status = self.winner()
 
         self._turn = opposite_turn
@@ -166,6 +167,17 @@ class PazaakGame(Serializable, Trackable):
 
         status = first_true(results, default=GameStatus.GAME_ON)
         self._is_over = status != GameStatus.GAME_ON
+
+        if status == GameStatus.PLAYER_WINS:
+            self.player.record.wins += 1
+            self.opponent.record.losses += 1
+        elif status == GameStatus.OPPONENT_WINS:
+            self.opponent.record.wins += 1
+            self.player.record.losses += 1
+        elif status == GameStatus.TIE:
+            self.player.record.ties += 1
+            self.opponent.record.ties += 1
+
         return status
 
 

@@ -1,4 +1,6 @@
+import collections
 from pazaak.game.cards import PazaakCard
+from pazaak.game.records import Record
 from pazaak.errors import GameLogicError
 from pazaak.helpers.bases import Serializable, Trackable
 
@@ -19,6 +21,8 @@ class PazaakPlayer(Serializable, Trackable):
         self._placed = []
         self._identifier = identifier
         self._forfeited = False
+        self._record = Record()
+
 
     def __str__(self) -> str:
         return 'PazaakPlayer({0})'.format(self.identifier)
@@ -71,6 +75,10 @@ class PazaakPlayer(Serializable, Trackable):
     def forfeited(self) -> bool:
         return self._forfeited
 
+    @property
+    def record(self) -> Record:
+        return self._record
+
     def stand(self) -> None:
         self._is_standing = True
 
@@ -86,7 +94,12 @@ class PazaakPlayer(Serializable, Trackable):
             'placed': self.placed,
             'score': self.score,
             'isStanding': self.is_standing,
-            'identifier': self.identifier
+            'identifier': self.identifier,
+            'record': {
+                'wins': self.record.wins,
+                'losses': self.record.losses,
+                'ties': self.record.ties
+            }
         }
 
 

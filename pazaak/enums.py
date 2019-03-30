@@ -103,6 +103,17 @@ class RequestType(enum.Enum):
     POST = 'POST'
 
 # ======================================
+
+@enum.unique
+class Theme(SerializableEnum):
+    LIGHT = 0
+    DARK = 1
+
+    @classmethod
+    def should_export_to_js(cls) -> bool:
+        return True
+
+# ======================================
 # Helper Functions
 # ======================================
 

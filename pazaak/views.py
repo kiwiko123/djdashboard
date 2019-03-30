@@ -38,8 +38,9 @@ class NewGameView(PazaakGameView):
 
     @allow_cors(_CLIENT_URL, RequestType.GET)
     def get(self) -> HttpResponse:
-        print(self.game_manager.game_count())
-        if self.game_manager.game_count() % 10 == 0:
+        game_count = self.game_manager.game_count()
+        print(game_count)
+        if game_count and game_count % 10 == 0:
             self.game_manager.clean_games()
 
         game_id = self.game_manager.new_game()
