@@ -59,7 +59,7 @@ class GameStatus(SerializableEnum):
     OPPONENT_WINS = 1
     TIE = 2
     GAME_ON = 3
-    FORFEIT = 4
+    PLAYER_FORFEIT = 4
 
     def __bool__(self) -> bool:
         return self != self.GAME_ON
@@ -101,7 +101,6 @@ class GameRules(SerializableEnum):
 class RequestType(enum.Enum):
     GET = 'GET'
     POST = 'POST'
-    OPTIONS = 'OPTIONS'
 
 # ======================================
 # Helper Functions

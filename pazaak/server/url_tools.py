@@ -12,9 +12,9 @@ class AutoParseableViewURL(metaclass=abc.ABCMeta):
     """
     _url_name_pattern = re.compile('\^((?P<name>[^/]+)/)+\$')
 
-    @classmethod
+    @staticmethod
     @abc.abstractmethod
-    def url(cls) -> str:
+    def url() -> str:
         """
         Implement this by returning the endpoint URL of this view.
         Example:
@@ -51,18 +51,19 @@ class AutoParseableViewURL(metaclass=abc.ABCMeta):
         return match.group('name')
 
 
+def is_auto_parseable(member) -> bool:
+    return inspect.isclass(member) \
+       and member is not AutoParseableViewURL \
+       and issubclass(AutoParseableViewURL)
 
-def url_patterns(module, predicate: callable) -> [url]:
+
+def url_patterns(module, predicate=is_auto_parseable) -> [url]:
     """
     Scans module for classes derived from AutoParseableViewURL that have implemented the @classmethod url().
     Returns an auto-generated list of Django URL patterns required by the app's top-level urls.py.
-    Call this method on the views module (views.py).
+    Inside the app's urls.py, call this function on the views module (views.py).
     """
     return [url(cls.regex_url(), cls.as_view(), name=cls.name()) for _, cls in inspect.getmembers(module, predicate=predicate)]
-
-
-def client_url() -> str:
-    return 'http://localhost:3000'
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ export const GameStatus = {
     OPPONENT_WINS: 1,
     TIE: 2,
     GAME_ON: 3,
-    FORFEIT: 4,
+    PLAYER_FORFEIT: 4,
 };
 
 export const Players = {

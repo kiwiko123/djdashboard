@@ -137,7 +137,6 @@ class PazaakGame extends React.Component {
 
     _getActionButtons() {
         const disableActionButtons = this.state.disableActionButtons || this.state.gameOver.value;
-        const showSpinner = !this.state.gameOver.value;
 
         return (
             <div className="row horizontal-row full-width">
@@ -146,7 +145,7 @@ class PazaakGame extends React.Component {
                     fontAwesomeClassName="fas fa-play"
                     disabled={disableActionButtons}
                     disableOnClick={true}
-                    showSpinnerOnClick={showSpinner}
+                    showSpinnerOnClick={!this.state.gameOver.value}
                     onClick={this._onClickEndTurn}
                 >
                     End Turn
@@ -156,7 +155,6 @@ class PazaakGame extends React.Component {
                     variant="warning"
                     fontAwesomeClassName="fas fa-arrow-up"
                     disableOnClick={true}
-                    showSpinnerOnClick={showSpinner}
                     disabled={disableActionButtons}
                     onClick={this._onClickStand}
                 >
