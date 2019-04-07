@@ -5,14 +5,14 @@ from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
 
 from pazaak.server.url_tools import AutoParseableViewURL
-from pazaak.enums import Actions, GameRules, GameStatus, Turn
+from pazaak.enums import Action, GameRule, GameStatus, Turn
 from pazaak.game import cards
 from pazaak.errors import GameLogicError, GameOverError, ServerError
 from pazaak.game.game import PazaakGame, PazaakCard
-from pazaak.helpers.bases import serialize
+from pazaak.bases import serialize
 
 
-_MAX_MODIFIER = GameRules.MAX_MODIFIER.value
+_MAX_MODIFIER = GameRule.MAX_MODIFIER.value
 
 def _init_game() -> PazaakGame:
     return PazaakGame(cards.random_cards(4, positive_only=False, bound=5))
@@ -103,7 +103,7 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
 
 
     def _process_player_move(self, game: PazaakGame, payload: dict) -> dict:
-        if Actions.ACTION.value not in payload:
+        if Action.ACTION.value not in payload:
             raise GameLogicError('did not receive "action" from payload')
 
         action = payload['action']
@@ -112,20 +112,20 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
         move = None
 
         # player ends turn - the opponent makes a move now
-        if action == Actions.END_TURN_PLAYER.value:
+        if action == Action.END_TURN_PLAYER.value:
             turn = Turn.PLAYER
 
         # opponent ends turn - the player makes a move now
-        elif action == Actions.END_TURN_OPPONENT.value:
+        elif action == Action.END_TURN_OPPONENT.value:
             turn = Turn.OPPONENT
 
-        elif action == Actions.HAND_PLAYER.value:
+        elif action == Action.HAND_PLAYER.value:
             card_index = payload['cardIndex']
             assert type(card_index) is int
             move = game.choose_from_hand(game.player, card_index)
             turn = Turn.PLAYER
 
-        elif action == Actions.STAND_PLAYER.value:
+        elif action == Action.STAND_PLAYER.value:
             game.player.stand()
             turn = Turn.PLAYER
 

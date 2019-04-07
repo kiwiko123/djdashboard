@@ -1,25 +1,24 @@
-import datetime
 import random
 import time
 from pazaak.game import cards
 from pazaak.game.cards import PazaakCard
 from pazaak.errors import GameLogicError, GameOverError
 from pazaak.game.players import PazaakPlayer
-from pazaak.enums import GameRules, GameStatus, Turn
+from pazaak.enums import GameRule, GameStatus, Turn
 from pazaak.data_structures.hash_tables import MultiSet
-from pazaak.helpers.bases import Serializable, Trackable
-from pazaak.helpers.utilities import first_true
+from pazaak.bases import Serializable, Recordable
+from pazaak.utilities import first_true
 
 
 _HAND_SIZE = 4
-_MAX_MODIFIER = GameRules.MAX_MODIFIER.value
-_WINNING_SCORE = GameRules.WINNING_SCORE.value
-_FILLED_TABLE_THRESHOLD = GameRules.MAX_CARDS_ON_TABLE.value
+_MAX_MODIFIER = GameRule.MAX_MODIFIER.value
+_WINNING_SCORE = GameRule.WINNING_SCORE.value
+_FILLED_TABLE_THRESHOLD = GameRule.MAX_CARDS_ON_TABLE.value
 
 
-class PazaakGame(Serializable, Trackable):
+class PazaakGame(Serializable, Recordable):
     def __init__(self, initial_pool: [PazaakCard], hand_size=_HAND_SIZE, max_modifier=_MAX_MODIFIER):
-        Trackable.__init__(self)
+        Recordable.__init__(self)
         self._hand_size = hand_size
         self._max_modifier = max_modifier
 

@@ -34,3 +34,15 @@
 .full-width {
     width: 100%;
 }
+
+.icon-disabled {
+    opacity: 0.5;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.rounded-corners-small {
+    border-radius: 1rem;
+}

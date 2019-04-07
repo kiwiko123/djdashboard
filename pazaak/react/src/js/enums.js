@@ -2,7 +2,7 @@
 // || AUTO-GENERATED FILE ||
 // =========================
 
-export const Actions = {
+export const Action = {
     ACTION: 'action',
     END_TURN_PLAYER: 'end-turn-player',
     END_TURN_OPPONENT: 'end-turn-opponent',
@@ -10,10 +10,10 @@ export const Actions = {
     STAND_PLAYER: 'stand-player',
 };
 
-export const GameRules = {
+export const GameRule = {
     MAX_CARDS_ON_TABLE: 9,
     WINNING_SCORE: 20,
-    MAX_MODIFIER: 10,
+    MAX_MODIFIER: 5,
 };
 
 export const GameStatus = {
@@ -24,7 +24,7 @@ export const GameStatus = {
     PLAYER_FORFEIT: 4,
 };
 
-export const Players = {
+export const Player = {
     PLAYER: 'player',
     OPPONENT: 'opponent',
 };

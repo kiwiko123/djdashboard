@@ -3,10 +3,10 @@ import PropTypes from 'prop-types';
 
 import { classes } from '../js/util';
 
-import '../styles/HoverButton.css';
+import '../styles/common.css';
 
 
-class HoverButton extends React.Component {
+class HoverIcon extends React.Component {
     static propTypes = {
         className: PropTypes.string,
 
@@ -29,30 +29,41 @@ class HoverButton extends React.Component {
 
     constructor(props) {
         super(props);
+        this._onClick = this._onClick.bind(this);
         this._onMouseEnter = this._onMouseEnter.bind(this);
         this._onMouseLeave = this._onMouseLeave.bind(this);
     }
 
     _onMouseEnter() {
-        this.props.onHover();
+        if (!this.props.disabled) {
+            this.props.onHover();
+        }
     }
 
     _onMouseLeave() {
-        if (this.props.onLeave) {
+        if (!this.props.disabled && this.props.onLeave) {
             this.props.onLeave();
         }
     }
 
+    _onClick() {
+        if (!this.props.disabled) {
+            this.props.onClick();
+        }
+    }
+
     render() {
-        const classNames = classes({
-            HoverButton: true,
-            [this.props.className]: this.props.className,
+        const className = classes({
+            HoverIcon: true,
             [this.props.fontAwesomeClassName]: true,
+            [this.props.className]: true,
+            'clickable': !this.props.disabled,
+            'icon-disabled': this.props.disabled,
         });
 
         return (
-            <i className={classNames}
-               onClick={this.props.onClick}
+            <i className={className}
+               onClick={this._onClick}
                onMouseEnter={this._onMouseEnter}
                onMouseLeave={this._onMouseLeave}
             />
@@ -60,4 +71,4 @@ class HoverButton extends React.Component {
     }
 }
 
-export default HoverButton;
+export default HoverIcon;

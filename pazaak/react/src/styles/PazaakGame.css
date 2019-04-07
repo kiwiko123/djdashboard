@@ -23,3 +23,8 @@
 .margin-right-small {
     margin-right: 1rem;
 }
+
+.button-action {
+    height: 5rem;
+    width: 12.5rem;
+}

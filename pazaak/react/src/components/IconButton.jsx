@@ -30,6 +30,14 @@ class IconButton extends React.Component {
         showSpinnerOnClick: PropTypes.bool,
 
         onClick: PropTypes.func.isRequired,
+
+        className: PropTypes.string,
+    };
+
+    static defaultProps = {
+        disabled: false,
+        disableOnClick: false,
+        showSpinnerOnClick: false,
     };
 
     constructor(props) {
@@ -49,6 +57,11 @@ class IconButton extends React.Component {
     }
 
     render() {
+        const buttonClassNames = {
+            "IconButton": true,
+            [this.props.className]: this.props.className,
+        };
+
         const iconClassNames = {
             'icon': true,
             'fas fa-circle-notch fa-spin': this.state.isLoading,
@@ -58,7 +71,7 @@ class IconButton extends React.Component {
 
         return (
             <Button
-                className="IconButton"
+                className={buttonClassNames}
                 variant={this.props.variant}
                 disabled={this.props.disabled || this.state.disabled}
                 onClick={this._onClick}

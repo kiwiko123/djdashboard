@@ -1,8 +1,8 @@
 import random
 
 from pazaak.errors import GameLogicError
-from pazaak.helpers.bases import Serializable
-from pazaak.helpers.utilities import coin_flip
+from pazaak.bases import Serializable
+from pazaak.utilities import coin_flip
 
 
 class PazaakCard(Serializable):

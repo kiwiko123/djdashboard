@@ -3,13 +3,13 @@ import inspect
 import pathlib
 import sys
 
-from pazaak.helpers.bases import SerializableEnum
+from pazaak.bases import SerializableEnum
 
 
 # ======================================
 
 @enum.unique
-class Actions(SerializableEnum):
+class Action(SerializableEnum):
     ACTION = 'action'
     END_TURN_PLAYER = 'end-turn-player'
     END_TURN_OPPONENT = 'end-turn-opponent'
@@ -23,7 +23,7 @@ class Actions(SerializableEnum):
 # ======================================
 
 @enum.unique
-class Players(SerializableEnum):
+class Player(SerializableEnum):
     PLAYER = 'player'
     OPPONENT = 'opponent'
 
@@ -86,7 +86,7 @@ class GameStatus(SerializableEnum):
 # ======================================
 
 @enum.unique
-class GameRules(SerializableEnum):
+class GameRule(SerializableEnum):
     MAX_CARDS_ON_TABLE = 9
     WINNING_SCORE = 20
     MAX_MODIFIER = 10
@@ -175,3 +175,7 @@ def _get_classes_in_current_module(predicate: callable) -> list:
 
     current_module = sys.modules[__name__]
     return [cls for _, cls in inspect.getmembers(current_module, lambda member: inspect.isclass(member) and predicate(member))]
+
+
+if __name__ == '__main__':
+    pass
