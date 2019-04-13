@@ -354,7 +354,8 @@ class PazaakGame(Serializable, Recordable):
                 'placed': self.player.placed,
                 # 'last_placed': self.player.placed[-1].parity() if self.player.placed else 0,
                 'size': len(self.player.placed),
-                'isStanding': self.player.is_standing
+                'isStanding': self.player.is_standing,
+                'record': self.player.record
             },
             Turn.OPPONENT: {
                 'score': self.opponent.score,
@@ -362,7 +363,8 @@ class PazaakGame(Serializable, Recordable):
                 'placed': self.opponent.placed,
                 # 'last_placed': self.opponent.placed[-1].parity() if self.opponent.placed else 0,
                 'size': len(self.opponent.placed),
-                'isStanding': self.opponent.is_standing
+                'isStanding': self.opponent.is_standing,
+                'record': self.player.record
             }
         }
 

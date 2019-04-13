@@ -94,11 +94,7 @@ class PazaakPlayer(Serializable, Recordable):
             'score': self.score,
             'isStanding': self.is_standing,
             'identifier': self.identifier,
-            'record': {
-                'wins': self.record.wins,
-                'losses': self.record.losses,
-                'ties': self.record.ties
-            }
+            'record': self.record
         }
 
 

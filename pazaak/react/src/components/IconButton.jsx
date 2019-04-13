@@ -57,21 +57,20 @@ class IconButton extends React.Component {
     }
 
     render() {
-        const buttonClassNames = {
+        const buttonClassName = {
             "IconButton": true,
             [this.props.className]: this.props.className,
         };
 
-        const iconClassNames = {
+        const iconClassName = classes({
             'icon': true,
             'fas fa-circle-notch fa-spin': this.state.isLoading,
-        };
-        iconClassNames[this.props.fontAwesomeClassName] = !this.state.isLoading;
-        const iconClassName = classes(iconClassNames);
+            [this.props.fontAwesomeClassName]: !this.state.isLoading,
+        });
 
         return (
             <Button
-                className={buttonClassNames}
+                className={buttonClassName}
                 variant={this.props.variant}
                 disabled={this.props.disabled || this.state.disabled}
                 onClick={this._onClick}

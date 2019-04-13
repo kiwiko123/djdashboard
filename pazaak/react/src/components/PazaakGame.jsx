@@ -147,7 +147,6 @@ class PazaakGame extends Component {
 
     _getActionButtons() {
         const disableActionButtons = this.state.disableActionButtons || this.state.gameOver.value;
-        const hideSpinner = this.state.gameOver.value;
 
         return (
             <div className="row horizontal-row full-width">
@@ -157,7 +156,7 @@ class PazaakGame extends Component {
                     fontAwesomeClassName="fas fa-play"
                     disabled={disableActionButtons}
                     disableOnClick={true}
-                    showSpinnerOnClick={!hideSpinner}
+                    showSpinnerOnClick={true}
                     onClick={this._onClickEndTurn}
                 >
                     End Turn

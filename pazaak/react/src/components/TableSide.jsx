@@ -36,7 +36,7 @@ class TableSide extends Component {
     };
 
     _getPlaceholder(key) {
-        const className = "card-placeholder pazaak-card-shape horizontal-row";
+        const className = "card-placeholder pazaak-card-shape horizontal-row rounded-corners-small";
         return (
             <div key={key}
                  className={className}

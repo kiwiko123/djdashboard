@@ -50,7 +50,7 @@ class PazaakCard(Serializable):
         return repr(self)
 
     def __bool__(self) -> bool:
-        return bool(self.modifier)
+        return self != PazaakCard.empty()
 
     def __hash__(self) -> int:
         return self._id

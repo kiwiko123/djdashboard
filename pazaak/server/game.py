@@ -109,7 +109,7 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
         action = payload['action']
         action = action.strip().lower()
         turn = None
-        move = None
+        move = PazaakCard.empty()
 
         # player ends turn - the opponent makes a move now
         if action == Action.END_TURN_PLAYER.value:
@@ -135,14 +135,14 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
         return self._next_move(game, turn, move=move)
 
 
-    def _next_move(self, game: PazaakGame, turn: Turn, move=None) -> dict:
+    def _next_move(self, game: PazaakGame, turn: Turn, move: PazaakCard) -> dict:
         player = None
 
         if turn == Turn.PLAYER:
             player = game.player
             if game.player.is_standing:
                 move = PazaakCard.empty()
-            elif move is None:
+            elif not move:
                 move = cards.random_card(positive_only=True, bound=_MAX_MODIFIER)
 
         elif turn == Turn.OPPONENT:
@@ -156,7 +156,6 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
             'status': GameStatus.GAME_ON.value,   # TODO fix in serialize()
             'move': move,
             'turn': {'justWent': game.turn},
-            # 'currentPlayer': player
         }
 
         if move is not None:

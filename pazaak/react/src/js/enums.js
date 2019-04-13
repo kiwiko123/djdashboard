@@ -13,7 +13,7 @@ export const Action = {
 export const GameRule = {
     MAX_CARDS_ON_TABLE: 9,
     WINNING_SCORE: 20,
-    MAX_MODIFIER: 5,
+    MAX_MODIFIER: 10,
 };
 
 export const GameStatus = {
