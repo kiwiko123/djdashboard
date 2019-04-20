@@ -6,7 +6,7 @@ import { classes } from '../js/util';
 import '../styles/common.css';
 
 
-class HoverIcon extends React.Component {
+class ActionIcon extends React.Component {
     static propTypes = {
         className: PropTypes.string,
 
@@ -15,9 +15,9 @@ class HoverIcon extends React.Component {
 
         disabled: PropTypes.bool,
 
-        onClick: PropTypes.func.isRequired,
+        onClick: PropTypes.func,
 
-        onHover: PropTypes.func.isRequired,
+        onHover: PropTypes.func,
 
         onLeave: PropTypes.func,
     };
@@ -32,24 +32,6 @@ class HoverIcon extends React.Component {
         this._onClick = this._onClick.bind(this);
         this._onMouseEnter = this._onMouseEnter.bind(this);
         this._onMouseLeave = this._onMouseLeave.bind(this);
-    }
-
-    _onMouseEnter() {
-        if (!this.props.disabled) {
-            this.props.onHover();
-        }
-    }
-
-    _onMouseLeave() {
-        if (!this.props.disabled && this.props.onLeave) {
-            this.props.onLeave();
-        }
-    }
-
-    _onClick() {
-        if (!this.props.disabled) {
-            this.props.onClick();
-        }
     }
 
     render() {
@@ -69,6 +51,24 @@ class HoverIcon extends React.Component {
             />
         );
     }
+
+    _onMouseEnter() {
+        this._invoke(this.props.onHover);
+    }
+
+    _onMouseLeave() {
+        this._invoke(this.props.onLeave);
+    }
+
+    _onClick() {
+        this._invoke(this.props.onClick);
+    }
+
+    _invoke(callable) {
+        if (!this.props.disabled && callable) {
+            callable();
+        }
+    }
 }
 
-export default HoverIcon;
+export default ActionIcon;

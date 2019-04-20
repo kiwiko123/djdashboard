@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import HoverIcon from './HoverIcon';
+import ActionIcon from './ActionIcon';
 import { classes } from '../js/util';
 
 import '../styles/colors.css';
@@ -65,7 +65,7 @@ class Collapsible extends Component {
         });
 
         return !this.props.hideCollapseIcon && (
-            <HoverIcon
+            <ActionIcon
                 className={hoverIconClassName}
                 fontAwesomeClassName={this.state.collapseIconClassName}
                 onClick={this._toggleCollapse}

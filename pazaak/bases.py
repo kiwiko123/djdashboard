@@ -4,7 +4,7 @@ import datetime
 import enum
 
 
-_PRIMITIVE_TYPES = {int, float, bool, str}
+_PRIMITIVE_TYPES = {int, float, bool, str, type(None)}
 
 
 class UpdateHistory:
@@ -50,7 +50,7 @@ class Recordable:
 
         Recordable.__init__(self) MUST be the very first step that happens in the derived class' __init__ method.
         """
-        self._history = collections.OrderedDict()
+        self._history = collections.defaultdict(list)
         self._recordable_types = recordable_types
         self._size = 0
 
@@ -125,13 +125,18 @@ class Recordable:
         """
         time_of_update = datetime.datetime.utcnow()
         update = UpdateHistory(attribute, value, time_of_update)
+        self._history[attribute].append(update)
 
-        if attribute in self._history:
-            updates = self._history[attribute]
-            if updates and updates[-1].value != value:
-                self._history[attribute].append(update)
-        else:
-            self._history[attribute] = [update]
+
+
+class IntegerIdentifiable:
+    __id = 0
+
+    @classmethod
+    def new_id(cls) -> int:
+        result = cls.__id
+        cls.__id += 1
+        return result
 
 
 
@@ -199,7 +204,7 @@ def serialize(payload):
     payload_type = type(payload)
 
     if isinstance(payload, Serializable) or issubclass(payload_type, Serializable):
-        result = payload.context()
+        result = payload.json()
 
     elif isinstance(payload, dict):
         result = {}
@@ -212,3 +217,7 @@ def serialize(payload):
         result = [serialize(item) for item in payload]
 
     return result
+
+
+if __name__ == '__main__':
+    pass

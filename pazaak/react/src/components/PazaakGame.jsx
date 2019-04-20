@@ -3,7 +3,7 @@ import { get } from 'lodash';
 
 import PlayerHeader from './PlayerHeader';
 import TableSide from './TableSide';
-import HoverIcon from './HoverIcon';
+import ActionIcon from './ActionIcon';
 import IconButton from './IconButton';
 import RequestService from '../js/requests';
 
@@ -31,6 +31,7 @@ class PazaakGame extends Component {
         this._toggleOpponentHandCardVisibility = this._toggleOpponentHandCardVisibility.bind(this);
         this._onHoverThemeControl = this._onHoverThemeControl.bind(this);
         this._onLeaveThemeControl = this._onLeaveThemeControl.bind(this);
+        this._toggleShowRecordData = this._toggleShowRecordData.bind(this);
 
         this.state = this._getInitialState();
         this._requestService = new RequestService('http://localhost:8000');
@@ -62,21 +63,25 @@ class PazaakGame extends Component {
         let score = 0;
         let isPlayer = false;
         let isWinner = false;
+        let recordData;
 
         switch (player) {
             case Player.PLAYER:
                 score = this.state.player.score;
                 isPlayer = true;
                 isWinner = this.state.gameOver.id === GameStatus.PLAYER_WINS;
+                recordData = this.state.player.record;
                 break;
             case Player.OPPONENT:
                 score = this.state.opponent.score;
                 isWinner = this.state.gameOver.id === GameStatus.OPPONENT_WINS;
+                recordData = this.state.opponent.record;
                 break;
             default:
                 console.error('invalid argument passed to PazaakGame._getPlayerHeader');
         }
 
+        recordData.isDisplayed = this.state.isRecordDisplayed;
         const gameOverData = {
             value: this.state.gameOver.value,
             id: this.state.gameOver.id,
@@ -89,6 +94,7 @@ class PazaakGame extends Component {
                 isPlayer={isPlayer}
                 hasCurrentTurn={hasCurrentTurn}
                 gameOverData={gameOverData}
+                recordData={recordData}
             />
         );
     }
@@ -190,7 +196,7 @@ class PazaakGame extends Component {
     _getControls() {
         return (
             <div className="controls row horizontal-row stick-right">
-                <HoverIcon
+                <ActionIcon
                     className="color-white margin-right-small"
                     fontAwesomeClassName={this.state.opponentHandCardVisibility.icon}
                     onHover={this._onHoverHandCardVisibilitySetting}
@@ -198,7 +204,13 @@ class PazaakGame extends Component {
                     onClick={this._toggleOpponentHandCardVisibility}
                 />
 
-                <HoverIcon
+                <ActionIcon
+                    className="color-white margin-right-small"
+                    fontAwesomeClassName="fas fa-list fa-2x"
+                    onClick={this._toggleShowRecordData}
+                />
+
+                <ActionIcon
                     className="color-white"
                     fontAwesomeClassName={this.state.theme.icon}
                     disabled={true} // temporary
@@ -307,6 +319,7 @@ class PazaakGame extends Component {
         // try to preserve settings if starting over
         const showOpponentHandCards = get(this.state, 'opponentHandCardVisibility.showOpponentHandCards', false);
         const currentTheme = get(this.state, 'theme.value', Theme.DARK);
+        const isRecordDisplayed = get(this.state, 'isRecordDisplayed', false);
 
         return {
             player: {
@@ -346,6 +359,7 @@ class PazaakGame extends Component {
                 value: currentTheme,
                 icon: this._getThemeControlIcon(currentTheme),
             },
+            isRecordDisplayed,
         };
     }
 
@@ -516,6 +530,11 @@ class PazaakGame extends Component {
                 icon: this._getThemeControlIcon(this.state.theme.value),
             },
         });
+    }
+
+    _toggleShowRecordData() {
+        const isShowing = this.state.isRecordDisplayed;
+        this.setState({ isRecordDisplayed: !isShowing });
     }
 }
 
