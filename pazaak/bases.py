@@ -3,6 +3,8 @@ import collections
 import datetime
 import enum
 
+from pazaak.utilities.functions import is_from_type
+
 
 _PRIMITIVE_TYPES = {int, float, bool, str, type(None)}
 
@@ -138,6 +140,13 @@ class IntegerIdentifiable:
         cls.__id += 1
         return result
 
+    def __init__(self):
+        self.__id = self.new_id()
+
+    @property
+    def id(self) -> int:
+        return self.__id
+
 
 
 class Serializable(metaclass=abc.ABCMeta):
@@ -201,15 +210,14 @@ def serialize(payload):
     Returns the serialized kwargs as a dictionary.
     """
     result = payload
-    payload_type = type(payload)
 
-    if isinstance(payload, Serializable) or issubclass(payload_type, Serializable):
+    if is_from_type(payload, Serializable):
         result = payload.json()
 
     elif isinstance(payload, dict):
         result = {}
         for field, value in payload.items():
-            if isinstance(field, SerializableEnum):
+            if is_from_type(field, SerializableEnum):
                 field = field.key()
             result[field] = serialize(value)
 

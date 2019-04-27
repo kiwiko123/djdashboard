@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import ActionIcon from './ActionIcon';
 import { classes } from '../js/util';
@@ -7,10 +7,10 @@ import '../styles/colors.css';
 import '../styles/Collapsible.css';
 
 
-class Collapsible extends Component {
+class Collapsible extends PureComponent {
     static propTypes = {
         className: PropTypes.string,
-        collapseIconClassName: PropTypes.string,
+        iconClassName: PropTypes.string,
         children: PropTypes.node,
         isCollapsed: PropTypes.bool.isRequired,
         hideCollapseIcon: PropTypes.bool,
@@ -28,16 +28,17 @@ class Collapsible extends Component {
         this._reverseCollapseIcon = this._reverseCollapseIcon.bind(this);
         this._restoreCollapseIcon = this._restoreCollapseIcon.bind(this);
 
+        this._isCollapsed = this.props.isCollapsed;
+
         this.state = {
-            isCollapsed: this.props.isCollapsed,
-            collapseIconClassName: this._getCollapseIconClassName(this.props.isCollapsed),
+            iconClassName: this._geticonClassName(this.props.isCollapsed),
             collapseIconColorClassName: 'color-gray-light',
         };
     }
 
     componentDidUpdate(prevProps) {
         if (prevProps.isCollapsed !== this.props.isCollapsed) {
-            this.setState({ isCollapsed: this.props.isCollapsed });
+            this._isCollapsed = this.props.isCollapsed;
         }
     }
 
@@ -47,7 +48,7 @@ class Collapsible extends Component {
             [this.props.className]: this.props.className,
         });
         const collapseIcon = this._getCollapseIcon();
-        const content = !this.state.isCollapsed && this.props.children;
+        const content = !this._isCollapsed && this.props.children;
 
         return (
             <div className={className}>
@@ -60,14 +61,14 @@ class Collapsible extends Component {
     _getCollapseIcon() {
         const hoverIconClassName = classes({
             'collapse-button': true,
-            [this.props.collapseIconClassName]: this.props.collapseIconClassName,
+            [this.props.iconClassName]: this.props.iconClassName,
             [this.state.collapseIconColorClassName]: true,
         });
 
         return !this.props.hideCollapseIcon && (
             <ActionIcon
                 className={hoverIconClassName}
-                fontAwesomeClassName={this.state.collapseIconClassName}
+                fontAwesomeClassName={this.state.iconClassName}
                 onClick={this._toggleCollapse}
                 onHover={this._reverseCollapseIcon}
                 onLeave={this._restoreCollapseIcon}
@@ -75,7 +76,7 @@ class Collapsible extends Component {
         );
     }
 
-    _getCollapseIconClassName(isCollapsed) {
+    _geticonClassName(isCollapsed) {
         return classes({
             'fas fa-chevron-down': isCollapsed,
             'fas fa-chevron-up': !isCollapsed,
@@ -83,29 +84,26 @@ class Collapsible extends Component {
     }
 
     _toggleCollapse() {
-        const isCollapsed = this.state.isCollapsed;
-        const iconClassName = this._getCollapseIconClassName(isCollapsed);
+        const iconClassName = this._geticonClassName(this._isCollapsed);
+        this._isCollapsed = !this._isCollapsed;
         this.setState({
-            isCollapsed: !isCollapsed,
-            collapseIconClassName: iconClassName,
+            iconClassName: iconClassName,
             collapseIconColorClassName: 'color-gray-light',
         });
     }
 
     _reverseCollapseIcon() {
-        const isCollapsed = this.state.isCollapsed;
-        const reversedIconClassName = this._getCollapseIconClassName(!isCollapsed);
+        const reversedIconClassName = this._geticonClassName(!this._isCollapsed);
         this.setState({
-            collapseIconClassName: reversedIconClassName,
+            iconClassName: reversedIconClassName,
             collapseIconColorClassName: 'color-gray-dark',
         });
     }
 
     _restoreCollapseIcon() {
-        const isCollapsed = this.state.isCollapsed;
-        const iconClassName = this._getCollapseIconClassName(isCollapsed);
+        const iconClassName = this._geticonClassName(this._isCollapsed);
         this.setState({
-            collapseIconClassName: iconClassName,
+            iconClassName: iconClassName,
             collapseIconColorClassName: 'color-gray-light',
         });
     }

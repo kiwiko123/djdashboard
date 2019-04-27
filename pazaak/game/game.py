@@ -6,7 +6,7 @@ from pazaak.errors import GameLogicError, GameOverError
 from pazaak.game.players import PazaakPlayer
 from pazaak.enums import GameRule, GameStatus, Turn
 from pazaak.data_structures.hash_tables import MultiSet
-from pazaak.bases import Serializable, Recordable
+from pazaak.bases import IntegerIdentifiable, Serializable, Recordable
 from pazaak.utilities.functions import first_true
 
 
@@ -16,9 +16,10 @@ _WINNING_SCORE = GameRule.WINNING_SCORE.value
 _FILLED_TABLE_THRESHOLD = GameRule.MAX_CARDS_ON_TABLE.value
 
 
-class PazaakGame(Serializable, Recordable):
+class PazaakGame(Serializable, IntegerIdentifiable, Recordable):
     def __init__(self, initial_pool: [PazaakCard], hand_size=_HAND_SIZE, max_modifier=_MAX_MODIFIER):
         Recordable.__init__(self)
+        IntegerIdentifiable.__init__(self)
         self._hand_size = hand_size
         self._max_modifier = max_modifier
 

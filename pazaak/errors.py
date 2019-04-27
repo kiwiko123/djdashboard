@@ -11,3 +11,9 @@ class GameLogicError(_PazaakError):
 
 class ServerError(_PazaakError):
     pass
+
+class DataError(Exception):
+    pass
+
+class InvalidCredentialsError(Exception):
+    pass

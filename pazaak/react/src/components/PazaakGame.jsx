@@ -8,6 +8,7 @@ import IconButton from './IconButton';
 import RequestService from '../js/requests';
 
 import { Action, GameStatus, Player, Theme } from '../js/enums';
+import { BASE_SERVER_URL, END_TURN_URL, NEW_GAME_URL, SELECT_HAND_CARD_URL, STAND_URL } from '../constants/urls';
 
 import '../styles/common.css';
 import '../styles/colors.css';
@@ -34,11 +35,10 @@ class PazaakGame extends Component {
         this._toggleShowRecordData = this._toggleShowRecordData.bind(this);
 
         this.state = this._getInitialState();
-        this._requestService = new RequestService('http://localhost:8000');
+        this._requestService = new RequestService(BASE_SERVER_URL);
 
-        const newGameURL = '/pazaak/api/new-game';
         this._requestService
-            .get(newGameURL)
+            .get(NEW_GAME_URL)
             .then(this._newGame);
     }
 
@@ -229,7 +229,6 @@ class PazaakGame extends Component {
      * @private
      */
     _getNextMove(player) {
-        const url = '/pazaak/api/end-turn';
         const action = player === Player.PLAYER ? Action.END_TURN_PLAYER : Action.END_TURN_OPPONENT;
         const payload = {
             action: action,
@@ -237,7 +236,7 @@ class PazaakGame extends Component {
             // gameId: this.state.gameId,
         };
 
-        this._requestService.post(url, payload)
+        this._requestService.post(END_TURN_URL, payload)
             .then(this._onEndTurnHandler);
     }
 
@@ -364,8 +363,7 @@ class PazaakGame extends Component {
     }
 
     _onClickStartOver() {
-        const url = '/pazaak/api/new-game';
-        this._requestService.post(url)
+        this._requestService.post(NEW_GAME_URL)
             .then(this._newGame);
     }
 
@@ -382,19 +380,17 @@ class PazaakGame extends Component {
     _onClickStand() {
         window.scrollTo(0, 0); // TODO -- better way of scrolling than using window?
         this.setState({ disableActionButtons: true });
-        const url = '/pazaak/api/stand';
         const payload = { action: Action.STAND_PLAYER };
-        this._requestService.post(url, payload)
+        this._requestService.post(STAND_URL, payload)
             .then(this._onReceiveEndTurnResponse);
     }
 
     _onClickHandCard(index) {
-        const url = '/pazaak/api/select-hand-card';
         const payload = {
             cardIndex: index,
             action: Action.HAND_PLAYER,
         };
-        return this._requestService.post(url, payload)
+        return this._requestService.post(SELECT_HAND_CARD_URL, payload)
             .then(this._onReceiveEndTurnResponse);
     }
 

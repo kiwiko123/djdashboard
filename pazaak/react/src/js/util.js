@@ -8,6 +8,7 @@
  */
 export function classes(obj) {
     return Object.keys(obj)
+        .filter(key => key)
         .filter(key => obj[key])
         .join(' ');
 }

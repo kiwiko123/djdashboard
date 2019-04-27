@@ -54,7 +54,8 @@ class AutoParseableViewURL(metaclass=abc.ABCMeta):
 def is_auto_parseable(member) -> bool:
     return inspect.isclass(member) \
        and member is not AutoParseableViewURL \
-       and issubclass(AutoParseableViewURL)
+       and issubclass(member, AutoParseableViewURL) \
+       and member.url()
 
 
 def url_patterns(module, predicate=is_auto_parseable) -> [url]:

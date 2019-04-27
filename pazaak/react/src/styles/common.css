@@ -46,3 +46,7 @@
 .rounded-corners-small {
     border-radius: 1rem;
 }
+
+.display-block {
+    display: block;
+}
