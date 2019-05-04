@@ -9,7 +9,8 @@ from pazaak.enums import Action, GameRule, GameStatus, Turn
 from pazaak.game import cards
 from pazaak.errors import GameLogicError, GameOverError, ServerError
 from pazaak.game.game import PazaakGame, PazaakCard
-from pazaak.bases import IntegerIdentifiable, serialize
+from pazaak.bases import IntegerIdentifiable
+from pazaak.utilities.serialize import serialize
 from pazaak.utilities.contracts import expects
 
 

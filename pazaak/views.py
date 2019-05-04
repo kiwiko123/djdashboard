@@ -24,10 +24,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import View
 from django.http import HttpRequest, HttpResponse, JsonResponse
 
-from pazaak import data_access, helpers
+from pazaak import helpers
+from pazaak.enums import AuthenticationContextType
+from pazaak.errors import ServerError
 from pazaak.server.game import PazaakGameView
 from pazaak.server.url_tools import AutoParseableViewURL
-from pazaak.server.utilities import allow_cors, RequestType
+from pazaak.server.utilities import allow_cors, EMAIL_ADDRESS_KEY, ERROR_KEY, monitor, request_to_payload, RequestType
 from pazaak.utilities.functions import contains_all_keys
 
 
@@ -36,7 +38,6 @@ def client_url() -> str:
     return 'http://localhost:3000'
 
 _CLIENT_URL = client_url()
-_ERROR_KEY = 'errorMessage'
 
 class NewGameView(PazaakGameView):
     @staticmethod
@@ -72,8 +73,9 @@ class EndTurnView(PazaakGameView):
         return '/api/end-turn'
 
     @allow_cors(_CLIENT_URL, RequestType.POST)
-    def post(self, request: HttpRequest) -> HttpResponse:
-        payload = json.loads(request.body)
+    @monitor
+    @request_to_payload
+    def post(self, payload: dict) -> HttpResponse:
         context = self.process_post(payload)
         return JsonResponse(context)
 
@@ -84,8 +86,8 @@ class StandView(PazaakGameView):
         return '/api/stand'
 
     @allow_cors(_CLIENT_URL, RequestType.POST)
-    def post(self, request: HttpRequest) -> HttpResponse:
-        payload = json.loads(request.body)
+    @request_to_payload
+    def post(self, payload: dict) -> HttpResponse:
         context = self.process_post(payload)
         return JsonResponse(context)
 
@@ -96,8 +98,8 @@ class SelectHandCardView(PazaakGameView):
         return '/api/select-hand-card'
 
     @allow_cors(_CLIENT_URL, RequestType.POST)
-    def post(self, request: HttpRequest) -> HttpResponse:
-        payload = json.loads(request.body)
+    @request_to_payload
+    def post(self, payload: dict) -> HttpResponse:
         context = self.process_post(payload)
         return JsonResponse(context)
 
@@ -116,20 +118,9 @@ class CreateAccountView(View, AutoParseableViewURL):
         return super().dispatch(request, *args, **kwargs)
 
     @allow_cors(_CLIENT_URL, RequestType.POST)
-    def post(self, request: HttpRequest) -> HttpResponse:
-        context = {}
-        payload = json.loads(request.body)
-        if contains_all_keys(payload, 'emailAddress', 'password'):
-            email_address = payload['emailAddress']
-            password = payload['password']
-            if email_address and password:
-                helpers.accounts.create_user(email_address, password)
-                context['emailAddress'] = email_address
-            else:
-                context[_ERROR_KEY] = 'blank emailAddress or password'
-        else:
-            context[_ERROR_KEY] = 'missing emailAddress or password from payload'
-
+    @request_to_payload
+    def post(self, payload: dict) -> HttpResponse:
+        context = helpers.views.create_account(payload)
         return JsonResponse(context)
 
 
@@ -147,17 +138,31 @@ class LoginView(View, AutoParseableViewURL):
         return super().dispatch(request, *args, **kwargs)
 
     @allow_cors(_CLIENT_URL, RequestType.POST)
-    def post(self, request: HttpRequest) -> HttpResponse:
-        context = {}
-        payload = json.loads(request.body)
-        if contains_all_keys(payload, 'emailAddress', 'password'):
-            email_address = payload['emailAddress']
-            password = payload['password']
-            if helpers.accounts.are_user_credentials_valid(email_address, password):
-                context['emailAddress'] = email_address
-            else:
-                context[_ERROR_KEY] = 'Invalid credentials. Please try again.'
-        else:
-            context[_ERROR_KEY] = 'missing emailAddress or password from payload'
-
+    @request_to_payload
+    def post(self, payload: dict) -> HttpResponse:
+        context = helpers.views.get_login_context(payload)
         return JsonResponse(context)
+
+
+class LogoutView(View, AutoParseableViewURL):
+    @staticmethod
+    def url() -> str:
+        return '/logout'
+
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        """
+        The sole purpose of this override is to remove all CSRF requirements on requests.
+        This may not be suitable if Pazaak is ever used in a production environment.
+        """
+        return super().dispatch(request, *args, **kwargs)
+
+    @allow_cors(_CLIENT_URL, RequestType.POST)
+    @request_to_payload
+    def post(self, payload: dict) -> HttpResponse:
+        if EMAIL_ADDRESS_KEY not in payload:
+            raise ServerError('Attempting to log out, but no email address was provided')
+
+        email_address = payload[EMAIL_ADDRESS_KEY]
+        helpers.accounts.authenticate_user(email_address, AuthenticationContextType.LOGOUT)
+        return JsonResponse({})

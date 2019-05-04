@@ -1,15 +1,19 @@
 import { endsWith, isEmpty, startsWith } from 'lodash';
 
 
-class RequestService {
+export default class RequestService {
 
 	constructor(base_url = '', persistentPayload = {}) {
-		this._base_url = base_url
+		this._base_url = base_url;
 		this._persistentPayload = persistentPayload;
 	}
 
 	setPersistentPayload(payload) {
-		this._persistentPayload = payload;
+		const persistentPaylod = this._persistentPayload;
+		this._persistentPayload = {
+			...persistentPaylod,
+			...payload,
+		};
 	}
 
 	async get(url) {
@@ -54,5 +58,3 @@ class RequestService {
 		};
 	}
 }
-
-export default RequestService;

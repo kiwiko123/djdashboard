@@ -1,7 +1,8 @@
 import random
 
 from pazaak.errors import GameLogicError
-from pazaak.bases import IntegerIdentifiable, Serializable
+from pazaak.bases import IntegerIdentifiable
+from pazaak.utilities.serialize import Serializable
 from pazaak.utilities.contracts import expects
 from pazaak.utilities.functions import coin_flip
 

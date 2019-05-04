@@ -50,3 +50,7 @@
 .display-block {
     display: block;
 }
+
+.underlined {
+    text-decoration: underline;
+}

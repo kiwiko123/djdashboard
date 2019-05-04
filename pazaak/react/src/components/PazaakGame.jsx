@@ -5,10 +5,12 @@ import PlayerHeader from './PlayerHeader';
 import TableSide from './TableSide';
 import ActionIcon from './ActionIcon';
 import IconButton from './IconButton';
-import RequestService from '../js/requests';
+import RequestService from '../js/RequestService';
+import StorageHelper from '../js/StorageHelper';
 
 import { Action, GameStatus, Player, Theme } from '../js/enums';
 import { BASE_SERVER_URL, END_TURN_URL, NEW_GAME_URL, SELECT_HAND_CARD_URL, STAND_URL } from '../constants/urls';
+import { CURRENT_USER_DATA_KEY, STORAGE_MODE_SESSION } from '../constants/storage';
 
 import '../styles/common.css';
 import '../styles/colors.css';
@@ -37,6 +39,8 @@ class PazaakGame extends Component {
         this.state = this._getInitialState();
         this._requestService = new RequestService(BASE_SERVER_URL);
 
+        const currentUserEmailAddress = StorageHelper.getItem(STORAGE_MODE_SESSION, CURRENT_USER_DATA_KEY);
+        this._requestService.setPersistentPayload({ emailAddress: currentUserEmailAddress });
         this._requestService
             .get(NEW_GAME_URL)
             .then(this._newGame);
@@ -370,7 +374,7 @@ class PazaakGame extends Component {
     _newGame(payload) {
         const initialState = this._getInitialState();
         const gameId = payload.gameId;
-        this._requestService.setPersistentPayload({ gameId });
+        this._requestService.setPersistentPayload({ gameId, emailAddress: 'test@test.com' });
         this.setState({
             ...initialState,
             ...payload,

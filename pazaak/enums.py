@@ -3,7 +3,7 @@ import inspect
 import pathlib
 import sys
 
-from pazaak.bases import SerializableEnum
+from pazaak.utilities.serialize import SerializableEnum
 
 
 # ======================================
@@ -112,6 +112,13 @@ class Theme(SerializableEnum):
     @classmethod
     def should_export_to_js(cls) -> bool:
         return True
+
+# ======================================
+
+@enum.unique
+class AuthenticationContextType(enum.Enum):
+    LOGIN = 0
+    LOGOUT = 1
 
 # ======================================
 # Helper Functions

@@ -1,4 +1,4 @@
-from pazaak.bases import Serializable
+from pazaak.utilities.serialize import Serializable
 
 
 class Record(Serializable):

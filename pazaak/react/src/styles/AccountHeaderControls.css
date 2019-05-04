@@ -1,0 +1,9 @@
+.controls-header {
+    float: right;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.control-individual {
+    padding-right: 2rem;
+}

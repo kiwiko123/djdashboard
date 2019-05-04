@@ -35,6 +35,29 @@ class TableSide extends Component {
         handCards: [],
     };
 
+    render() {
+        const maxCardsPerRow = 4;
+        const columnClass = classes({
+            column: true,
+            columnLeftBorder: this.props.isPlayer,
+        });
+
+        const collapsibleGroupedCards = this._getGroupedCollapsibleCardRows(maxCardsPerRow, columnClass);
+        const handCards = this._getCards(this.props.handCards, true);
+
+        return (
+            <div className="TableSide full-width">
+                {collapsibleGroupedCards}
+                <hr />
+                <div className="row">
+                    <div className={columnClass}>
+                        {handCards}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     _getPlaceholder(key) {
         const className = "card-placeholder pazaak-card-shape horizontal-row rounded-corners-small";
         return (
@@ -106,33 +129,10 @@ class TableSide extends Component {
         return groupedCards.map((group, index) => this._getCollapsibleCardRow(
             index,
             group,
-            index < (groupedCards.length - 1),
+            this.props.placedCards > 0 && index < (groupedCards.length - 1),
             groupedCards.length === 1,
             columnClassName
         ));
-    }
-
-    render() {
-        const maxCardsPerRow = 4;
-        const columnClass = classes({
-            column: true,
-            columnLeftBorder: this.props.isPlayer,
-        });
-
-        const collapsibleGroupedCards = this._getGroupedCollapsibleCardRows(maxCardsPerRow, columnClass);
-        const handCards = this._getCards(this.props.handCards, true);
-
-        return (
-            <div className="TableSide full-width">
-                {collapsibleGroupedCards}
-                <hr />
-                <div className="row">
-                    <div className={columnClass}>
-                        {handCards}
-                    </div>
-                </div>
-            </div>
-        );
     }
 }
 

@@ -1,3 +1,13 @@
 .TextInputLabel {
     display: block;
 }
+
+.error {
+    border: 2px solid red;
+}
+
+.error-message {
+    margin-left: 1rem;
+    color: red;
+    font-size: 10px;
+}
