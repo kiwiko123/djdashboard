@@ -14,13 +14,19 @@ class PlayerHeader extends PureComponent {
             PropTypes.number,
             PropTypes.string,
         ]),
-        isPlayer: PropTypes.bool,
-        hasCurrentTurn: PropTypes.bool,
+        isPlayer: PropTypes.bool.isRequired,
+        hasCurrentTurn: PropTypes.bool.isRequired,
         gameOverData: PropTypes.shape({
             value: PropTypes.bool,
             id: PropTypes.number,
             isWinner: PropTypes.bool,
-        })
+        }),
+        recordData: PropTypes.shape({
+            wins: PropTypes.number.isRequired,
+            losses: PropTypes.number.isRequired,
+            ties: PropTypes.number.isRequired,
+            isDisplayed: PropTypes.bool.isRequired,
+        }),
     };
 
     static defaultProps = {
@@ -28,12 +34,19 @@ class PlayerHeader extends PureComponent {
             value: false,
             isWinner: false,
         },
+        recordData: {
+            wins: 0,
+            losses: 0,
+            ties: 0,
+            isDisplayed: false,
+        },
     };
 
     render() {
         const playerLabel = this.props.isPlayer ? 'You' : 'Opponent';
         const scoreLabel = `${playerLabel}: ${this.props.text}`;
         const icon = this._getIcon();
+        const recordContent = this._getRecordContent();
         const containerClassName = classes({
             PlayerHeader: true,
             column: true,
@@ -44,6 +57,7 @@ class PlayerHeader extends PureComponent {
         // TODO flash turn icon on switch
         return (
             <div className={containerClassName}>
+                {recordContent}
                 <div className="icon-turn">
                     {icon}
                 </div>
@@ -63,6 +77,16 @@ class PlayerHeader extends PureComponent {
 
         return (
             <i className={iconClasses} />
+        );
+    }
+
+    _getRecordContent() {
+        return this.props.recordData.isDisplayed && (
+            <div className="record color-gray">
+                <span className="row">{`Wins: ${this.props.recordData.wins}`}</span>
+                <span className="row">{`Losses: ${this.props.recordData.losses}`}</span>
+                <span className="row">{`Ties: ${this.props.recordData.ties}`}</span>
+            </div>
         );
     }
 }

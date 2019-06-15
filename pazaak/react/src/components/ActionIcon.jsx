@@ -3,10 +3,10 @@ import PropTypes from 'prop-types';
 
 import { classes } from '../js/util';
 
-import '../styles/HoverButton.css';
+import '../styles/common.css';
 
 
-class HoverButton extends React.Component {
+class ActionIcon extends React.Component {
     static propTypes = {
         className: PropTypes.string,
 
@@ -15,9 +15,9 @@ class HoverButton extends React.Component {
 
         disabled: PropTypes.bool,
 
-        onClick: PropTypes.func.isRequired,
+        onClick: PropTypes.func,
 
-        onHover: PropTypes.func.isRequired,
+        onHover: PropTypes.func,
 
         onLeave: PropTypes.func,
     };
@@ -29,35 +29,46 @@ class HoverButton extends React.Component {
 
     constructor(props) {
         super(props);
+        this._onClick = this._onClick.bind(this);
         this._onMouseEnter = this._onMouseEnter.bind(this);
         this._onMouseLeave = this._onMouseLeave.bind(this);
     }
 
-    _onMouseEnter() {
-        this.props.onHover();
-    }
-
-    _onMouseLeave() {
-        if (this.props.onLeave) {
-            this.props.onLeave();
-        }
-    }
-
     render() {
-        const classNames = classes({
-            HoverButton: true,
-            [this.props.className]: this.props.className,
+        const className = classes({
+            HoverIcon: true,
             [this.props.fontAwesomeClassName]: true,
+            [this.props.className]: true,
+            'clickable': !this.props.disabled,
+            'icon-disabled': this.props.disabled,
         });
 
         return (
-            <i className={classNames}
-               onClick={this.props.onClick}
+            <i className={className}
+               onClick={this._onClick}
                onMouseEnter={this._onMouseEnter}
                onMouseLeave={this._onMouseLeave}
             />
         );
     }
+
+    _onMouseEnter() {
+        this._invoke(this.props.onHover);
+    }
+
+    _onMouseLeave() {
+        this._invoke(this.props.onLeave);
+    }
+
+    _onClick() {
+        this._invoke(this.props.onClick);
+    }
+
+    _invoke(callable) {
+        if (!this.props.disabled && callable) {
+            callable();
+        }
+    }
 }
 
-export default HoverButton;
+export default ActionIcon;

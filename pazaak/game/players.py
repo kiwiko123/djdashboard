@@ -1,11 +1,10 @@
-import collections
 from pazaak.game.cards import PazaakCard
 from pazaak.game.records import Record
 from pazaak.errors import GameLogicError
-from pazaak.helpers.bases import Serializable, Trackable
+from pazaak.bases import Serializable, Recordable
 
 
-class PazaakPlayer(Serializable, Trackable):
+class PazaakPlayer(Serializable, Recordable):
     def __init__(self, hand: [PazaakCard], identifier: str, _hand_container_type=list):
         """
         Initialize a PazaakPlayer object.
@@ -14,7 +13,7 @@ class PazaakPlayer(Serializable, Trackable):
         `_hand_container_type` can be used to change the data structure that represents the player's hand;
                                this is useful for efficiently choosing known card values for an 'intelligent opponent'.
         """
-        Trackable.__init__(self)
+        Recordable.__init__(self)
         self._hand = hand if _hand_container_type is list else _hand_container_type(hand)
         self._score = 0
         self._is_standing = False
@@ -95,11 +94,7 @@ class PazaakPlayer(Serializable, Trackable):
             'score': self.score,
             'isStanding': self.is_standing,
             'identifier': self.identifier,
-            'record': {
-                'wins': self.record.wins,
-                'losses': self.record.losses,
-                'ties': self.record.ties
-            }
+            'record': self.record
         }
 
 

@@ -1,25 +1,24 @@
-import datetime
 import random
 import time
 from pazaak.game import cards
 from pazaak.game.cards import PazaakCard
 from pazaak.errors import GameLogicError, GameOverError
 from pazaak.game.players import PazaakPlayer
-from pazaak.enums import GameRules, GameStatus, Turn
+from pazaak.enums import GameRule, GameStatus, Turn
 from pazaak.data_structures.hash_tables import MultiSet
-from pazaak.helpers.bases import Serializable, Trackable
-from pazaak.helpers.utilities import first_true
+from pazaak.bases import Serializable, Recordable
+from pazaak.utilities.functions import first_true
 
 
 _HAND_SIZE = 4
-_MAX_MODIFIER = GameRules.MAX_MODIFIER.value
-_WINNING_SCORE = GameRules.WINNING_SCORE.value
-_FILLED_TABLE_THRESHOLD = GameRules.MAX_CARDS_ON_TABLE.value
+_MAX_MODIFIER = GameRule.MAX_MODIFIER.value
+_WINNING_SCORE = GameRule.WINNING_SCORE.value
+_FILLED_TABLE_THRESHOLD = GameRule.MAX_CARDS_ON_TABLE.value
 
 
-class PazaakGame(Serializable, Trackable):
+class PazaakGame(Serializable, Recordable):
     def __init__(self, initial_pool: [PazaakCard], hand_size=_HAND_SIZE, max_modifier=_MAX_MODIFIER):
-        Trackable.__init__(self)
+        Recordable.__init__(self)
         self._hand_size = hand_size
         self._max_modifier = max_modifier
 
@@ -168,15 +167,7 @@ class PazaakGame(Serializable, Trackable):
         status = first_true(results, default=GameStatus.GAME_ON)
         self._is_over = status != GameStatus.GAME_ON
 
-        if status == GameStatus.PLAYER_WINS:
-            self.player.record.wins += 1
-            self.opponent.record.losses += 1
-        elif status == GameStatus.OPPONENT_WINS:
-            self.opponent.record.wins += 1
-            self.player.record.losses += 1
-        elif status == GameStatus.TIE:
-            self.player.record.ties += 1
-            self.opponent.record.ties += 1
+        self._update_records(status)
 
         return status
 
@@ -222,6 +213,18 @@ class PazaakGame(Serializable, Trackable):
 
     def _player_filled_table(self, player: PazaakPlayer) -> bool:
         return len(player.placed) >= _FILLED_TABLE_THRESHOLD and player.score <= _WINNING_SCORE
+
+
+    def _update_records(self, status: GameStatus) -> None:
+        if status == GameStatus.PLAYER_WINS:
+            self.player.record.wins += 1
+            self.opponent.record.losses += 1
+        elif status in (GameStatus.OPPONENT_WINS, GameStatus.PLAYER_FORFEIT):
+            self.player.record.losses += 1
+            self.opponent.record.wins += 1
+        elif status == GameStatus.TIE:
+            self.player.record.ties += 1
+            self.opponent.record.ties += 1
 
 
     def _get_move(self, player: PazaakPlayer) -> PazaakCard:
@@ -349,22 +352,8 @@ class PazaakGame(Serializable, Trackable):
 
     def context(self) -> dict:
         return {
-            Turn.PLAYER: {
-                'score': self.player.score,
-                'hand': self.player.hand,
-                'placed': self.player.placed,
-                # 'last_placed': self.player.placed[-1].parity() if self.player.placed else 0,
-                'size': len(self.player.placed),
-                'isStanding': self.player.is_standing
-            },
-            Turn.OPPONENT: {
-                'score': self.opponent.score,
-                'hand': list(self.opponent.hand),
-                'placed': self.opponent.placed,
-                # 'last_placed': self.opponent.placed[-1].parity() if self.opponent.placed else 0,
-                'size': len(self.opponent.placed),
-                'isStanding': self.opponent.is_standing
-            }
+            Turn.PLAYER: self.player,
+            Turn.OPPONENT: self.opponent,
         }
 
 

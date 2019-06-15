@@ -4,36 +4,38 @@ from django.utils.decorators import method_decorator
 from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
 
+from pazaak.server.users import UserAccount
 from pazaak.server.url_tools import AutoParseableViewURL
-from pazaak.enums import Actions, GameRules, GameStatus, Turn
+from pazaak.enums import Action, GameRule, GameStatus, Turn
 from pazaak.game import cards
 from pazaak.errors import GameLogicError, GameOverError, ServerError
 from pazaak.game.game import PazaakGame, PazaakCard
-from pazaak.helpers.bases import serialize
+from pazaak.bases import IntegerIdentifiable, serialize
+from pazaak.utilities.contracts import expects
 
 
-_MAX_MODIFIER = GameRules.MAX_MODIFIER.value
+_MAX_MODIFIER = GameRule.MAX_MODIFIER.value
 
 def _init_game() -> PazaakGame:
     return PazaakGame(cards.random_cards(4, positive_only=False, bound=5))
 
 
-class GameManager:
+class GameManager(IntegerIdentifiable):
     def __init__(self):
         self._games = {}
-        self._next_game_id = 0
 
 
     def new_game(self) -> int:
-        game_id = self._increment_game_id()
+        game_id = self.new_id()
         game = _init_game()
         self._games[game_id] = game
         return game_id
 
 
+    @expects(lambda self, game_id: game_id in self._games,
+             exception=ServerError,
+             message='Unknown game received')
     def get_game(self, game_id: int) -> PazaakGame:
-        if game_id not in self._games:
-            raise ServerError('Unknown game received')
         return self._games[game_id]
 
 
@@ -50,12 +52,6 @@ class GameManager:
 
     def game_count(self) -> int:
         return len(self._games)
-
-
-    def _increment_game_id(self) -> int:
-        result = self._next_game_id
-        self._next_game_id += 1
-        return result
 
 
 class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
@@ -102,30 +98,30 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
         return context
 
 
+    @expects(lambda self, game, payload: Action.ACTION.value in payload,
+             exception=GameLogicError,
+             message='did not receive "action" from payload')
     def _process_player_move(self, game: PazaakGame, payload: dict) -> dict:
-        if Actions.ACTION.value not in payload:
-            raise GameLogicError('did not receive "action" from payload')
-
         action = payload['action']
         action = action.strip().lower()
         turn = None
-        move = None
+        move = PazaakCard.empty()
 
         # player ends turn - the opponent makes a move now
-        if action == Actions.END_TURN_PLAYER.value:
+        if action == Action.END_TURN_PLAYER.value:
             turn = Turn.PLAYER
 
         # opponent ends turn - the player makes a move now
-        elif action == Actions.END_TURN_OPPONENT.value:
+        elif action == Action.END_TURN_OPPONENT.value:
             turn = Turn.OPPONENT
 
-        elif action == Actions.HAND_PLAYER.value:
+        elif action == Action.HAND_PLAYER.value:
             card_index = payload['cardIndex']
             assert type(card_index) is int
             move = game.choose_from_hand(game.player, card_index)
             turn = Turn.PLAYER
 
-        elif action == Actions.STAND_PLAYER.value:
+        elif action == Action.STAND_PLAYER.value:
             game.player.stand()
             turn = Turn.PLAYER
 
@@ -135,14 +131,14 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
         return self._next_move(game, turn, move=move)
 
 
-    def _next_move(self, game: PazaakGame, turn: Turn, move=None) -> dict:
+    def _next_move(self, game: PazaakGame, turn: Turn, move: PazaakCard) -> dict:
         player = None
 
         if turn == Turn.PLAYER:
             player = game.player
             if game.player.is_standing:
                 move = PazaakCard.empty()
-            elif move is None:
+            elif not move:
                 move = cards.random_card(positive_only=True, bound=_MAX_MODIFIER)
 
         elif turn == Turn.OPPONENT:
@@ -156,7 +152,6 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
             'status': GameStatus.GAME_ON.value,   # TODO fix in serialize()
             'move': move,
             'turn': {'justWent': game.turn},
-            # 'currentPlayer': player
         }
 
         if move is not None:

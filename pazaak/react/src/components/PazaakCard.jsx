@@ -46,7 +46,8 @@ class PazaakCard extends React.Component {
             'horizontal-row': true,
             'PazaakCard': true,
             'pazaak-card-shape': true,
-            'hand-card': handData.isHandCard,
+            'rounded-corners-small': true,
+            'clickable': handData.isHandCard && handData.onClick,
         });
         const modifier = (!handData.isHandCard || handData.showValue) && this.props.displayModifier;
 

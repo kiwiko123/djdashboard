@@ -1,8 +1,9 @@
 import random
 
 from pazaak.errors import GameLogicError
-from pazaak.helpers.bases import Serializable
-from pazaak.helpers.utilities import coin_flip
+from pazaak.bases import Serializable
+from pazaak.utilities.contracts import expects
+from pazaak.utilities.functions import coin_flip
 
 
 class PazaakCard(Serializable):
@@ -32,14 +33,15 @@ class PazaakCard(Serializable):
         cls.__id += 1
         return result
 
+    @expects(lambda self, modifier: modifier != PazaakCard.__EMPTY_VALUE or PazaakCard.__initializing_empty,
+             exception=ValueError,
+             message='cannot initialize a PazaakCard with the empty card value')
     def __init__(self, modifier: int):
         """
         Initialize a new Pazaak card.
         Modifier is the value to add/subtract to the player's score.
         Cannot be initialized with a value of 0.
         """
-        if modifier == PazaakCard.__EMPTY_VALUE and not PazaakCard.__initializing_empty:
-            raise ValueError('cannot initialize a PazaakCard with the empty card value ({0})'.format(modifier))
         self._modifier = modifier
         self._id = PazaakCard._generate_id()
 
@@ -50,7 +52,7 @@ class PazaakCard(Serializable):
         return repr(self)
 
     def __bool__(self) -> bool:
-        return bool(self.modifier)
+        return self != PazaakCard.empty()
 
     def __hash__(self) -> int:
         return self._id

@@ -3,11 +3,11 @@ import { get } from 'lodash';
 
 import PlayerHeader from './PlayerHeader';
 import TableSide from './TableSide';
-import HoverButton from './HoverButton';
+import ActionIcon from './ActionIcon';
 import IconButton from './IconButton';
 import RequestService from '../js/requests';
 
-import { Actions, GameStatus, Players, Theme } from '../js/enums';
+import { Action, GameStatus, Player, Theme } from '../js/enums';
 
 import '../styles/common.css';
 import '../styles/colors.css';
@@ -31,6 +31,7 @@ class PazaakGame extends Component {
         this._toggleOpponentHandCardVisibility = this._toggleOpponentHandCardVisibility.bind(this);
         this._onHoverThemeControl = this._onHoverThemeControl.bind(this);
         this._onLeaveThemeControl = this._onLeaveThemeControl.bind(this);
+        this._toggleShowRecordData = this._toggleShowRecordData.bind(this);
 
         this.state = this._getInitialState();
         this._requestService = new RequestService('http://localhost:8000');
@@ -62,21 +63,25 @@ class PazaakGame extends Component {
         let score = 0;
         let isPlayer = false;
         let isWinner = false;
+        let recordData;
 
         switch (player) {
-            case Players.PLAYER:
+            case Player.PLAYER:
                 score = this.state.player.score;
                 isPlayer = true;
                 isWinner = this.state.gameOver.id === GameStatus.PLAYER_WINS;
+                recordData = this.state.player.record;
                 break;
-            case Players.OPPONENT:
+            case Player.OPPONENT:
                 score = this.state.opponent.score;
                 isWinner = this.state.gameOver.id === GameStatus.OPPONENT_WINS;
+                recordData = this.state.opponent.record;
                 break;
             default:
                 console.error('invalid argument passed to PazaakGame._getPlayerHeader');
         }
 
+        recordData.isDisplayed = this.state.isRecordDisplayed;
         const gameOverData = {
             value: this.state.gameOver.value,
             id: this.state.gameOver.id,
@@ -89,14 +94,15 @@ class PazaakGame extends Component {
                 isPlayer={isPlayer}
                 hasCurrentTurn={hasCurrentTurn}
                 gameOverData={gameOverData}
+                recordData={recordData}
             />
         );
     }
 
     _getScoreRow() {
         const gameOverBanner = this._getGameOverBanner();
-        const playerScore = this._getPlayerHeader(Players.PLAYER);
-        const opponentScore = this._getPlayerHeader(Players.OPPONENT);
+        const playerScore = this._getPlayerHeader(Player.PLAYER);
+        const opponentScore = this._getPlayerHeader(Player.OPPONENT);
 
         return (
             <div className="GameHeader">
@@ -134,6 +140,7 @@ class PazaakGame extends Component {
                     showHandCards={true}
                     onClickHandCard={this._onClickHandCard}
                 />
+
                 <TableSide
                     isPlayer={false}
                     placedCards={opponentPlaced}
@@ -150,17 +157,19 @@ class PazaakGame extends Component {
         return (
             <div className="row horizontal-row full-width">
                 <IconButton
+                    className="rounded-corners-small button-action"
                     variant="success"
                     fontAwesomeClassName="fas fa-play"
                     disabled={disableActionButtons}
                     disableOnClick={true}
-                    showSpinnerOnClick={!this.state.gameOver.value}
+                    showSpinnerOnClick={true}
                     onClick={this._onClickEndTurn}
                 >
                     End Turn
                 </IconButton>
 
                 <IconButton
+                    className="rounded-corners-small button-action"
                     variant="warning"
                     fontAwesomeClassName="fas fa-arrow-up"
                     disableOnClick={true}
@@ -171,6 +180,7 @@ class PazaakGame extends Component {
                 </IconButton>
 
                 <IconButton
+                    className="rounded-corners-small button-action"
                     variant="danger"
                     fontAwesomeClassName="fas fa-redo"
                     disableOnClick={true}
@@ -186,7 +196,7 @@ class PazaakGame extends Component {
     _getControls() {
         return (
             <div className="controls row horizontal-row stick-right">
-                <HoverButton
+                <ActionIcon
                     className="color-white margin-right-small"
                     fontAwesomeClassName={this.state.opponentHandCardVisibility.icon}
                     onHover={this._onHoverHandCardVisibilitySetting}
@@ -194,9 +204,16 @@ class PazaakGame extends Component {
                     onClick={this._toggleOpponentHandCardVisibility}
                 />
 
-                <HoverButton
+                <ActionIcon
+                    className="color-white margin-right-small"
+                    fontAwesomeClassName="fas fa-list fa-2x"
+                    onClick={this._toggleShowRecordData}
+                />
+
+                <ActionIcon
                     className="color-white"
                     fontAwesomeClassName={this.state.theme.icon}
+                    disabled={true} // temporary
                     onClick={() => {}}
                     onHover={this._onHoverThemeControl}
                     onLeave={this._onLeaveThemeControl}
@@ -208,12 +225,12 @@ class PazaakGame extends Component {
     /**
      * POSTs to the end-turn API endpoint.
      *
-     * @param player one of {Players.PLAYER, Players.OPPONENT}.
+     * @param player one of {Player.PLAYER, Player.OPPONENT}.
      * @private
      */
     _getNextMove(player) {
         const url = '/pazaak/api/end-turn';
-        const action = player === Players.PLAYER ? Actions.END_TURN_PLAYER : Actions.END_TURN_OPPONENT;
+        const action = player === Player.PLAYER ? Action.END_TURN_PLAYER : Action.END_TURN_OPPONENT;
         const payload = {
             action: action,
             turn: player,
@@ -230,13 +247,13 @@ class PazaakGame extends Component {
      */
     _onClickEndTurn() {
         this.setState({ disableActionButtons: true });
-        this._getNextMove(Players.PLAYER)
+        this._getNextMove(Player.PLAYER)
     }
 
     _onEndTurnHandler(payload) {
         let timeoutMs = 0;
 
-        if (this.state.turn === Players.PLAYER) {
+        if (this.state.turn === Player.PLAYER) {
             if (this.state.player.isStanding) {
                 timeoutMs = 500;
             }
@@ -258,8 +275,8 @@ class PazaakGame extends Component {
 
         const playerToUpdate = payload.turn.justWent.value;
         const playerUpNext = payload.turn.upNext.value;
-        const isPlayerStanding = (playerToUpdate === Players.PLAYER && payload.isStanding) || this.state.player.isStanding;
-        const shouldWaitForUserInput = playerUpNext === Players.PLAYER && !isPlayerStanding;
+        const isPlayerStanding = (playerToUpdate === Player.PLAYER && payload.isStanding) || this.state.player.isStanding;
+        const shouldWaitForUserInput = playerUpNext === Player.PLAYER && !isPlayerStanding;
 
         const updatedState = this._getEndTurnUpdatedState(payload, playerToUpdate);
         this.setState({
@@ -285,10 +302,10 @@ class PazaakGame extends Component {
         let state = {};
 
         switch (player) {
-            case Players.PLAYER:
+            case Player.PLAYER:
                 state = { player: playerData };
                 break;
-            case Players.OPPONENT:
+            case Player.OPPONENT:
                 state = { opponent: playerData };
                 break;
             default:
@@ -302,6 +319,7 @@ class PazaakGame extends Component {
         // try to preserve settings if starting over
         const showOpponentHandCards = get(this.state, 'opponentHandCardVisibility.showOpponentHandCards', false);
         const currentTheme = get(this.state, 'theme.value', Theme.DARK);
+        const isRecordDisplayed = get(this.state, 'isRecordDisplayed', false);
 
         return {
             player: {
@@ -326,7 +344,7 @@ class PazaakGame extends Component {
                     ties: 0,
                 },
             },
-            turn: Players.PLAYER,
+            turn: Player.PLAYER,
             disableActionButtons: false,
             isNewGame: true,
             gameOver: {
@@ -341,6 +359,7 @@ class PazaakGame extends Component {
                 value: currentTheme,
                 icon: this._getThemeControlIcon(currentTheme),
             },
+            isRecordDisplayed,
         };
     }
 
@@ -364,7 +383,7 @@ class PazaakGame extends Component {
         window.scrollTo(0, 0); // TODO -- better way of scrolling than using window?
         this.setState({ disableActionButtons: true });
         const url = '/pazaak/api/stand';
-        const payload = { action: Actions.STAND_PLAYER };
+        const payload = { action: Action.STAND_PLAYER };
         this._requestService.post(url, payload)
             .then(this._onReceiveEndTurnResponse);
     }
@@ -373,7 +392,7 @@ class PazaakGame extends Component {
         const url = '/pazaak/api/select-hand-card';
         const payload = {
             cardIndex: index,
-            action: Actions.HAND_PLAYER,
+            action: Action.HAND_PLAYER,
         };
         return this._requestService.post(url, payload)
             .then(this._onReceiveEndTurnResponse);
@@ -511,6 +530,11 @@ class PazaakGame extends Component {
                 icon: this._getThemeControlIcon(this.state.theme.value),
             },
         });
+    }
+
+    _toggleShowRecordData() {
+        const isShowing = this.state.isRecordDisplayed;
+        this.setState({ isRecordDisplayed: !isShowing });
     }
 }
 

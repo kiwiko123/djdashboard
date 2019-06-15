@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { chunk } from 'lodash';
 import PazaakCard from './PazaakCard';
+import Collapsible from './Collapsible';
 import { classes } from '../js/util';
 
 import '../styles/common.css';
@@ -34,7 +36,7 @@ class TableSide extends Component {
     };
 
     _getPlaceholder(key) {
-        const className = "card-placeholder pazaak-card-shape horizontal-row";
+        const className = "card-placeholder pazaak-card-shape horizontal-row rounded-corners-small";
         return (
             <div key={key}
                  className={className}
@@ -42,10 +44,9 @@ class TableSide extends Component {
         );
     }
 
-    _getPlaceholders(numCardsPlaced) {
-        const numCardsPerRow = 4;
+    _getPlaceholders(numCardsPlaced, maxCardsPerRow) {
         const upperBound = Math.max(1, numCardsPlaced);
-        const maxPlaceholdersPerRow = numCardsPerRow * Math.ceil(upperBound / numCardsPerRow);
+        const maxPlaceholdersPerRow = maxCardsPerRow * Math.ceil(upperBound / maxCardsPerRow);
         const numPlaceholdersNeeded = Math.abs(maxPlaceholdersPerRow - numCardsPlaced);
         const placeholders = [];
 
@@ -74,31 +75,56 @@ class TableSide extends Component {
         );
     }
 
-    _getCards(cards, isHandCard) {
+    _getCards(cards, isHandCard, maxCardsPerRow) {
         let result = cards.map((card, index) => this._getCard(card, index, isHandCard));
         if (!isHandCard) {
-            const placeholders = this._getPlaceholders(cards.length);
+            const placeholders = this._getPlaceholders(cards.length, maxCardsPerRow);
             result = result.concat(placeholders);
         }
 
         return result;
     }
 
+    _getCollapsibleCardRow(index, groupedCards, isCollapsed, hideCollapseIcon, columnClassName) {
+        return (
+            <Collapsible
+                key={index}
+                className="row"
+                isCollapsed={isCollapsed}
+                hideCollapseIcon={hideCollapseIcon}
+            >
+                <div className={columnClassName}>
+                    {groupedCards}
+                </div>
+            </Collapsible>
+        );
+    }
+
+    _getGroupedCollapsibleCardRows(maxCardsPerRow, columnClassName) {
+        const placedCards = this._getCards(this.props.placedCards, false, maxCardsPerRow);
+        const groupedCards = chunk(placedCards, maxCardsPerRow);
+        return groupedCards.map((group, index) => this._getCollapsibleCardRow(
+            index,
+            group,
+            index < (groupedCards.length - 1),
+            groupedCards.length === 1,
+            columnClassName
+        ));
+    }
+
     render() {
+        const maxCardsPerRow = 4;
         const columnClass = classes({
             column: true,
             columnLeftBorder: this.props.isPlayer,
         });
-        const placedCards = this._getCards(this.props.placedCards, false);
+
+        const collapsibleGroupedCards = this._getGroupedCollapsibleCardRows(maxCardsPerRow, columnClass);
         const handCards = this._getCards(this.props.handCards, true);
 
         return (
             <div className="TableSide full-width">
-                <div className="row">
-                    <div className={columnClass}>
-                        {placedCards}
-                    </div>
-                </div>
+                {collapsibleGroupedCards}
                 <hr />
                 <div className="row">
                     <div className={columnClass}>
