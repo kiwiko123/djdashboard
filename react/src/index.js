@@ -1,11 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import routes from './routes';
 import './index.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import PazaakGame from './components/PazaakGame';
 import * as serviceWorker from './serviceWorker';
 
-ReactDOM.render(<PazaakGame />, document.getElementById('root'));
+ReactDOM.render(routes(), document.getElementById('root'),
+);
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.

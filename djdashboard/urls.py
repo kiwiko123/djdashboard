@@ -19,5 +19,6 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^flick/', include('flick.urls')),
-    url(r'^pazaak/', include('pazaak.urls'))
+    url(r'^pazaak/', include('pazaak.urls')),
+    url(r'^scrabble/', include('scrabble.urls'))
 ]

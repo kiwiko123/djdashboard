@@ -4,7 +4,6 @@ from django.utils.decorators import method_decorator
 from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
 
-from pazaak.server.users import UserAccount
 from pazaak.server.url_tools import AutoParseableViewURL
 from pazaak.enums import Action, GameRule, GameStatus, Turn
 from pazaak.game import cards

@@ -3,7 +3,7 @@ import pathlib
 from django.apps import AppConfig
 from pazaak.enums import export_enums_to_js
 
-_ENUM_WRITE_FILE = 'pazaak/react/src/js/enums.js'
+_ENUM_WRITE_FILE = 'react/src/pazaak/js/enums.js'
 
 class PazaakConfig(AppConfig):
     name = 'pazaak'

@@ -2,7 +2,6 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { classes } from '../js/util';
 
-import 'font-awesome/css/font-awesome.min.css';
 import '../styles/common.css';
 import '../styles/colors.css';
 import '../styles/PlayerHeader.css';
