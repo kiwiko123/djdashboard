@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { chunk } from 'lodash';
 import PazaakCard from './PazaakCard';
 import Collapsible from './Collapsible';
-import { classes } from '../js/util';
+import { classes } from '../../common/js/util';
 
 import '../styles/common.css';
 import '../styles/TableSide.css';

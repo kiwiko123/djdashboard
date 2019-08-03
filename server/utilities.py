@@ -1,8 +1,18 @@
+import abc
+import enum
 import inspect
+import pathlib
+import sys
 
 from django.http import HttpResponse
 
-from pazaak.enums import RequestType
+from server.serialization import SerializableEnum
+
+
+@enum.unique
+class RequestType(enum.Enum):
+    GET = 'GET'
+    POST = 'POST'
 
 
 class allow_cors:
@@ -24,6 +34,10 @@ class allow_cors:
             return response
 
         return _interceptor
+
+
+def get_client_url() -> str:
+    return 'http://localhost:3000'
 
 
 if __name__ == '__main__':

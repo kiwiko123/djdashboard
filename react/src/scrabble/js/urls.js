@@ -1,0 +1,1 @@
+export const NEW_GAME_URL = '/scrabble/api/new-game';

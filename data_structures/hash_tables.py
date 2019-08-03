@@ -1,5 +1,5 @@
 import collections
-from pazaak.data_structures.containers import BaseContainer
+from data_structures.containers import BaseContainer
 
 
 class MultiSet(BaseContainer):

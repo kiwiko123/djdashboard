@@ -5,7 +5,7 @@ import PlayerHeader from './PlayerHeader';
 import TableSide from './TableSide';
 import ActionIcon from './ActionIcon';
 import IconButton from './IconButton';
-import RequestService from '../js/requests';
+import RequestService from '../../common/js/requests';
 
 import { Action, GameStatus, Player, Theme } from '../js/enums';
 

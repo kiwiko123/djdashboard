@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Button from 'react-bootstrap/Button';
 
-import { classes } from '../js/util';
+import { classes } from '../../common/js/util';
 import '../styles/IconButton.css';
 
 

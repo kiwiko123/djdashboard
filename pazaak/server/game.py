@@ -4,53 +4,25 @@ from django.utils.decorators import method_decorator
 from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
 
-from pazaak.server.url_tools import AutoParseableViewURL
+from server.url_tools import AutoParseableViewURL
 from pazaak.enums import Action, GameRule, GameStatus, Turn
 from pazaak.game import cards
-from pazaak.errors import GameLogicError, GameOverError, ServerError
+from pazaak.errors import GameLogicError, GameOverError
 from pazaak.game.game import PazaakGame, PazaakCard
-from pazaak.bases import IntegerIdentifiable, serialize
+from server.serialization import serialize
+from utilities.games import GameManager
 from pazaak.utilities.contracts import expects
 
 
 _MAX_MODIFIER = GameRule.MAX_MODIFIER.value
 
-def _init_game() -> PazaakGame:
-    return PazaakGame(cards.random_cards(4, positive_only=False, bound=5))
 
-
-class GameManager(IntegerIdentifiable):
+class PazaakGameManager(GameManager):
     def __init__(self):
-        self._games = {}
+        super().__init__()
 
-
-    def new_game(self) -> int:
-        game_id = self.new_id()
-        game = _init_game()
-        self._games[game_id] = game
-        return game_id
-
-
-    @expects(lambda self, game_id: game_id in self._games,
-             exception=ServerError,
-             message='Unknown game received')
-    def get_game(self, game_id: int) -> PazaakGame:
-        return self._games[game_id]
-
-
-    def remove_game(self, game_id: int) -> None:
-        if game_id in self._games:
-            del self._games[game_id]
-
-
-    def clean_games(self) -> None:
-        games_to_remove = (game_id for game_id, game in self._games.items() if game.is_over)
-        for game_id in games_to_remove:
-            self.remove_game(game_id)
-
-
-    def game_count(self) -> int:
-        return len(self._games)
+    def create_game(self):
+        return PazaakGame(cards.random_cards(4, positive_only=False, bound=5))
 
 
 class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
@@ -65,7 +37,7 @@ class PazaakGameView(View, AutoParseableViewURL, metaclass=abc.ABCMeta):
     """
     PLAYER_TAG = 'player'
     OPPONENT_TAG = 'opponent'
-    game_manager = GameManager()
+    game_manager = PazaakGameManager()
 
 
     @method_decorator(csrf_exempt)

@@ -5,8 +5,9 @@ from pazaak.game.cards import PazaakCard
 from pazaak.errors import GameLogicError, GameOverError
 from pazaak.game.players import PazaakPlayer
 from pazaak.enums import GameRule, GameStatus, Turn
-from pazaak.data_structures.hash_tables import MultiSet
-from pazaak.bases import Serializable, Recordable
+from data_structures.hash_tables import MultiSet
+from server.serialization import Serializable
+from utilities.identification import Recordable
 from pazaak.utilities.functions import first_true
 
 

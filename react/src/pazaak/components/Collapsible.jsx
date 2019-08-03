@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import ActionIcon from './ActionIcon';
-import { classes } from '../js/util';
+import { classes } from '../../common/js/util';
 
 import '../styles/colors.css';
 import '../styles/Collapsible.css';

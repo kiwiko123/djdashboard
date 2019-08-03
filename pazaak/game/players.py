@@ -1,7 +1,8 @@
 from pazaak.game.cards import PazaakCard
 from pazaak.game.records import Record
 from pazaak.errors import GameLogicError
-from pazaak.bases import Serializable, Recordable
+from server.serialization import Serializable
+from utilities.identification import Recordable
 
 
 class PazaakPlayer(Serializable, Recordable):

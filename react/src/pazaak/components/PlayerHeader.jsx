@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { classes } from '../js/util';
+import { classes } from '../../common/js/util';
 
 import '../styles/common.css';
 import '../styles/colors.css';
