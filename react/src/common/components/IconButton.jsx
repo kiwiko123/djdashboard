@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Button from 'react-bootstrap/Button';
 
-import { classes } from '../../common/js/util';
+import { classes } from '../js/util';
 import '../styles/IconButton.css';
 
 
@@ -38,12 +38,16 @@ class IconButton extends React.Component {
         disabled: false,
         disableOnClick: false,
         showSpinnerOnClick: false,
+        variant: 'primary',
     };
 
     constructor(props) {
         super(props);
         this._onClick = this._onClick.bind(this);
-        this.state = { isLoading: false };
+        this.state = {
+            isLoading: false,
+            disabled: this.props.disabled,
+        };
     }
 
     componentDidUpdate(prevProps, prevState) {

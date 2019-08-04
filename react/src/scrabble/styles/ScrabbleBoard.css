@@ -1,0 +1,9 @@
+.border-white {
+    border-style: solid;
+    border-color: white;
+}
+
+.Cell {
+    width: 5rem;
+    height: 5rem;
+}

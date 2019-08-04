@@ -4,7 +4,7 @@ import { get } from 'lodash';
 import PlayerHeader from './PlayerHeader';
 import TableSide from './TableSide';
 import ActionIcon from './ActionIcon';
-import IconButton from './IconButton';
+import IconButton from '../../common/components/IconButton';
 import RequestService from '../../common/js/requests';
 
 import { Action, GameStatus, Player, Theme } from '../js/enums';

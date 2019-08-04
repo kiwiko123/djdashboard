@@ -61,17 +61,18 @@ class SerializableEnum(Serializable, enum.Enum, metaclass=_SerializableEnumMeta)
 
 class EnumSerializer:
 
-    def __init__(self, path_to_write_file: str) -> None:
+    def __init__(self, path_to_write_file: str, module=None) -> None:
         """
         Override this method to return the relative path to the file that should be written,
         starting at the project's base directory.
         """
         self._path_to_write_file = path_to_write_file
+        self._module = module
 
     def export(self) -> None:
         path_to_write_file = self._path_to_write_file
         write_file = pathlib.Path(path_to_write_file)
-        _export_enums_to_js(write_file)
+        _export_enums_to_js(write_file, self._module)
 
 
 def serialize(payload):
@@ -99,7 +100,7 @@ def serialize(payload):
     return result
 
 
-def _export_enums_to_js(write_file: pathlib.Path):
+def _export_enums_to_js(write_file: pathlib.Path, module):
     """
     Automatically generate a JS class representing enums in this module.
     Generated enums must be derived from SerializableEnum,
@@ -107,7 +108,7 @@ def _export_enums_to_js(write_file: pathlib.Path):
 
     Generation happens at server startup, in pazaak/apps.py.
     """
-    enums_to_serialize = _get_classes_in_current_module(_should_serialize_to_js)
+    enums_to_serialize = _get_classes_in_current_module(_should_serialize_to_js) if module is None else _get_classes_in_module(module, _should_serialize_to_js)
     with write_file.open('w') as outfile:
         header = [
             '// =========================',
@@ -157,6 +158,10 @@ def _get_classes_in_current_module(predicate: callable) -> list:
 
     current_module = sys.modules[__name__]
     return [cls for _, cls in inspect.getmembers(current_module, lambda member: inspect.isclass(member) and predicate(member))]
+
+
+def _get_classes_in_module(module, predicate: callable) -> list:
+    return [cls for _, cls in inspect.getmembers(module, lambda member: inspect.isclass(member) and predicate(member))]
 
 
 

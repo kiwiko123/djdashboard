@@ -1,5 +1,3 @@
-import pathlib
-
 from django.apps import AppConfig
 from server.serialization import EnumSerializer
 

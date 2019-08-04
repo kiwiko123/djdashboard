@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'flick.apps.FlickConfig',
     'pazaak.apps.PazaakConfig',
+    'scrabble.apps.ScrabbleConfig'
 ]
 
 MIDDLEWARE = [
