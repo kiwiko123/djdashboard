@@ -74,8 +74,13 @@ class ScrabbleGame(Serializable):
         return is_valid_move
 
 
+    def _is_coordinate_valid(self, coordinate: (int,)) -> bool:
+        x, y = coordinate
+        return 0 <= x < self._board.row_count() and 0 <= y < self._board.column_count()
+
+
     def _are_coordinates_valid(self, coordinates: [(int,)]) -> bool:
-        return all(0 <= x < self._board.row_count() and 0 <= y < self._board.column_count() for x, y in coordinates)
+        return all(self._is_coordinate_valid(coordinates) for coordinates in coordinates)
 
 
     def _is_valid_move(self, move: ScrabbleMove) -> bool:
@@ -134,6 +139,8 @@ class ScrabbleGame(Serializable):
             'board': self._board.rows(),
             'player': self._player,
             'opponent': self._opponent,
+            'playerTiles': self._player.characters,
+            'opponentTiles': self._opponent.characters
         }
 
 
@@ -148,6 +155,44 @@ class ScrabbleGame(Serializable):
     def _create_player(cls, id: str) -> Player:
         characters = [cls._get_random_character() for _ in range(cls._max_characters_for_player)]
         return Player(id, characters)
+
+
+    def is_word(self, word: str) -> bool:
+        return self._word_checker.is_word(word)
+
+
+    def get_words_from_placed_tile(self, indices_by_coordinates: {(int,): int}) -> [str]:
+        result = set()
+        for coordinate, index in indices_by_coordinates.items():
+            adjacent_words = self._find_adjacent_words(coordinate, indices_by_coordinates)
+            result.update(adjacent_words)
+
+        return result
+
+
+    def _find_adjacent_words(self, coordinate: (int, int), indices_by_coordinates) -> [str]:
+        right = self._find_adjacent_word(coordinate, indices_by_coordinates, 0, 1)
+        down = self._find_adjacent_word(coordinate, indices_by_coordinates, 1, 0)
+
+        result = {right, down}
+        return {word for word in result if word is not None and self.is_word(word)}
+
+
+    def _find_adjacent_word(self, coordinate: (int, int), indices_by_coordinates: {(int,): int}, row_delta: int, column_delta: int) -> str:
+        result = ''
+        directional_coordinate = tuple(coordinate)
+        while self._is_coordinate_valid(directional_coordinate) \
+                and (directional_coordinate in indices_by_coordinates or not self._board.is_blank(directional_coordinate[0], directional_coordinate[1])):
+            if directional_coordinate not in indices_by_coordinates:
+                return None
+
+            index = indices_by_coordinates[directional_coordinate]
+            result += self._player.characters[index]
+            x, y = directional_coordinate
+            directional_coordinate = (x + row_delta, y + column_delta)
+
+        return result if result else None
+
 
 
 if __name__ == '__main__':

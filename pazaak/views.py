@@ -22,7 +22,7 @@ import json
 from django.http import HttpRequest, HttpResponse, JsonResponse
 
 from pazaak.server.game import PazaakGameView
-from server.utilities import allow_cors, RequestType
+from server.util import allow_cors, RequestType
 
 
 # TODO find a more central place for this function

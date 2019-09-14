@@ -2,14 +2,13 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { classes } from '../../common/js/util';
 
-import '../../common/styles/colors.css';
 import '../../common/styles/common.css';
 
 
 export default class Cell extends Component {
 
     static propTypes = {
-        text: PropTypes.string,
+        children: PropTypes.node,
         className: PropTypes.string,
         onClick: PropTypes.func,
         draggable: PropTypes.bool,
@@ -19,6 +18,9 @@ export default class Cell extends Component {
     };
 
     static defaultProps = {
+        children: null,
+        className: null,
+        onClick: null,
         draggable: false,
         onDragStart: () => {},
         onDragOver: (event) => { event.preventDefault(); },
@@ -46,9 +48,7 @@ export default class Cell extends Component {
                 onDragOver={this.props.onDragOver}
                 onDrop={this.props.onDrop}
             >
-                <span className="color-white">
-                    {this.props.text}
-                </span>
+                {this.props.children}
             </div>
         );
     }

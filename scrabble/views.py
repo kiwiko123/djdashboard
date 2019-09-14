@@ -1,4 +1,5 @@
 import abc
+import json
 
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
@@ -6,10 +7,11 @@ from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
 
 from scrabble.game.game import ScrabbleGame
+from scrabble.game import words
 
 from server.serialization import serialize
 from server.url_tools import AutoParseableViewURL
-from server.utilities import allow_cors, get_client_url, RequestType
+from server.util import allow_cors, get_client_url, RequestType
 
 from utilities.games import GameManager
 
@@ -43,15 +45,38 @@ class NewGameView(ScrabbleGameView):
 
     @allow_cors(_CLIENT_URL, RequestType.GET)
     def get(self) -> HttpResponse:
+        self.game_manager.clean_games_by_created_time(5)
         game_id = self.game_manager.new_game()
-
-        if self.game_manager.game_count() > 10:
-            self.game_manager.clean_games()
 
         game = self.game_manager.get_game(game_id)
         context = {
             'gameId': game_id,
             **serialize(game)
+        }
+
+        return JsonResponse(context)
+
+
+class ValidateMoveView(ScrabbleGameView):
+
+    @staticmethod
+    def url() -> str:
+        return '/api/validate-move'
+
+    @allow_cors(_CLIENT_URL, RequestType.POST)
+    def post(self, request: HttpRequest) -> HttpResponse:
+        payload = json.loads(request.body)
+        game = self.game_manager.get_game_from_payload(payload)
+        indices_by_coordinates = {(tile['row'], tile['column']): tile['index'] for tile in payload.get('submittedTiles', [])}
+
+        # TODO implement word validator
+        # valid_words = game.get_words_from_placed_tile(indices_by_coordinates)
+
+        scores = {}
+
+        context = {
+            'is_valid': True,
+            'scores': scores
         }
 
         return JsonResponse(context)
@@ -65,11 +90,8 @@ class PlayMoveView(ScrabbleGameView):
 
     @allow_cors(_CLIENT_URL, RequestType.POST)
     def post(self, request: HttpRequest) -> HttpResponse:
-        game_id = self.game_manager.new_game()
-
-        if self.game_manager.game_count() > 10:
-            self.game_manager.clean_games()
-
+        payload = json.loads(request.body)
+        game_id = payload['gameId']
         game = self.game_manager.get_game(game_id)
 
 

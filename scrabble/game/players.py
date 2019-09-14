@@ -36,7 +36,6 @@ class Player(Serializable):
     def context(self) -> dict:
         return {
             'id': self.id,
-            'characters': self.characters
         }
 
 

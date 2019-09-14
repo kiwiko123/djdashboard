@@ -61,10 +61,10 @@ class IconButton extends React.Component {
     }
 
     render() {
-        const buttonClassName = {
-            "IconButton": true,
+        const buttonClassName = classes({
+            'IconButton': true,
             [this.props.className]: this.props.className,
-        };
+        });
 
         const iconClassName = classes({
             'icon': true,

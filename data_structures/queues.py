@@ -4,7 +4,7 @@ import abc
 import collections
 import math
 import operator
-from containers import BaseContainer
+from .containers import BaseContainer
 
 
 class BaseQueue(BaseContainer, metaclass=abc.ABCMeta):
@@ -53,6 +53,10 @@ class BaseQueue(BaseContainer, metaclass=abc.ABCMeta):
         if not self:
             raise ValueError('Cannot retrieve the top of an empty queue')
         return self._container[0]
+
+    def repush(self) -> None:
+        x = self.pop()
+        self.push(x)
 
 
 class Queue(BaseQueue):

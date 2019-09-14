@@ -1,10 +1,10 @@
 import React from 'react';
-import Cell from '../Cell';
+import TextCell from '../TextCell';
 import { classes } from '../../../common/js/util';
 
 
-function renderPlayerTiles(characters, disabled) {
-    const elements = characters.map((character, index) => _renderTile(character, index, disabled));
+export function renderPlayerTiles(tiles, disabled) {
+    const elements = tiles.map(tile => _renderTile(tile, disabled));
     return (
         <div className="row">
             {elements}
@@ -12,28 +12,29 @@ function renderPlayerTiles(characters, disabled) {
     )
 }
 
-function _onDragStart(event, characterIndex) {
-    event.dataTransfer.setData('text/plain', characterIndex);
-    event.dataTransfer.dropEffect = 'move';
+export function onDragStart(event, text, dropEffect = 'move') {
+    event.dataTransfer.setData('text/plain', text);
+    event.dataTransfer.dropEffect = dropEffect;
 }
 
-function _renderTile(character, index, disabled) {
+function _renderTile(tile, disabled) {
+    const character = tile.value;
+    const index = tile.index;
     const key = `player-character-${index}`;
     const classNames = classes({
         'border-white': true,
         'parent-center': true,
+        'game-cell': true,
         'clickable': !disabled,
     });
 
     return (
-        <Cell
+        <TextCell
             className={classNames}
             text={character}
             key={key}
             draggable={true}
-            onDragStart={event => _onDragStart(event, index)}
+            onDragStart={event => onDragStart(event, index)}
         />
     );
 }
-
-export { renderPlayerTiles };

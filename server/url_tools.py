@@ -8,7 +8,7 @@ from django.conf.urls import url
 class AutoParseableViewURL(metaclass=abc.ABCMeta):
     """
     Base class to simplify Django URL setup.
-    Implementing the url() class method allows the function url_patterns to be called in the top-level urls.py.
+    Implementing the url() static method allows the function url_patterns to be called in the top-level urls.py.
     """
     _url_name_pattern = re.compile('\^((?P<name>[^/]+)/)+\$')
 

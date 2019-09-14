@@ -35,7 +35,9 @@ class Recordable:
         '_whitelisted_fields',
         '_history',
         '_recordable_types',
-        '_size'
+        '_size',
+        '_created_time',
+        '_last_updated_time'
     }
 
 
@@ -51,6 +53,10 @@ class Recordable:
         self._recordable_types = recordable_types
         self._size = 0
 
+        now = datetime.datetime.utcnow()
+        self._created_time = now
+        self._last_updated_time = now
+
 
     @property
     def recordable_types(self) -> {type}:
@@ -65,9 +71,20 @@ class Recordable:
     def __setattr__(self, name: str, value):
         super().__setattr__(name, value)
         if name not in self._whitelisted_fields:
+            self._last_updated_time = datetime.datetime.utcnow()
             value_to_record = value if self.should_record_value(value) else None
             self._update(name, value_to_record)
             self._size += 1
+
+
+    @property
+    def created_time(self) -> datetime.datetime:
+        return self._created_time
+
+
+    @property
+    def last_updated_time(self) -> datetime.datetime:
+        return self._last_updated_time
 
 
     def last_modification(self) -> UpdateHistory:
@@ -125,11 +142,11 @@ class Recordable:
         self._history[attribute].append(update)
 
 
-class IntegerIncrementable:
-    __id = 0
+class IntegerIncrementor:
+    _id = 0
 
     @classmethod
     def new_id(cls) -> int:
-        result = cls.__id
-        cls.__id += 1
+        result = cls._id
+        cls._id += 1
         return result

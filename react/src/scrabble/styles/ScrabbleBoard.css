@@ -3,7 +3,7 @@
     border-color: white;
 }
 
-.Cell {
-    width: 5rem;
-    height: 5rem;
+.game-cell {
+    width: 3.25rem;
+    height: 3.25rem;
 }

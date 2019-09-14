@@ -1,6 +1,12 @@
 import pathlib
 
 
+_SINGLE_CHARACTER_WORDS = {'A', 'I'}
+
+def _process_word(word: str) -> str:
+    return word.strip().upper()
+
+
 class WordChecker:
     def __init__(self, path_to_words_file='/usr/share/dict/words'):
         words_file = pathlib.Path(path_to_words_file)
@@ -8,15 +14,13 @@ class WordChecker:
             raise ValueError('"{0}" is not a valid file'.format(path_to_words_file))
 
         with words_file.open() as infile:
-            self._words = {line.strip() for line in infile}
+            self._words = {_process_word(line) for line in infile}
 
 
     def is_word(self, word: str) -> bool:
-        return word in self._words
-
-
-    def remove_word(self, word: str) -> None:
-        self._words.discard(word)
+        word = _process_word(word)
+        dictionary = _SINGLE_CHARACTER_WORDS if len(word) == 1 else self._words
+        return word in dictionary
 
 
 _CHARACTER_VALUES = {
